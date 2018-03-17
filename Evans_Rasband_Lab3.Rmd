@@ -14,6 +14,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Exploratory Data Analysis
 
+## Data Integrity and Cleaning
+
+```{r}
+# Load the data from CSV.
+crime.dat <- read.csv('crime_v2.csv')
+
+# Clean the data: Rows 92-97 are empty, so removing them.
+crime.dat <- na.omit(crime.dat)
+```
+
 # The Model
 
 # The Regression Table
