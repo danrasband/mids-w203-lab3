@@ -1,0 +1,23 @@
+---
+title: 'Lab 3: Reducing Crime'
+subtitle: 'W203 Statistics'
+author: 'Luke Evans and Daniel Rasband'
+date: \today
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+# Exploratory Data Analysis
+
+# The Model
+
+# The Regression Table
+
+# Omitted Variables
+
+# Conclusion
