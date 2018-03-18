@@ -10,24 +10,54 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Introduction
+## Introduction
+ - Motivation: To address the causes of crime, and/or to promote the crime inhibitors
+ - Enable the political campaign to develop policies that will address crime in North Carolina
+ - Identification of key focus areas that: Address causes of crime; capitalize on crime inhibitors
+ - Not going to include costing of any measures
+ - Exclude anything else?
 
-# Exploratory Data Analysis
+## Exploratory Data Analysis
+  - 2 types of factor: crime drivers; crime surpressors 
+  - Some exceptional data in county 185, presents weekly service wages 10 times larger than any other weekly wage which is skewing the dataset
+  - Some exceptional data in county 115 where police per capita is double the nearest value
+  - Crime drivers apprear to be:
+    - density: Population Density
+    - taxpc: Tax revenue per capita
+    - pctmin80: percent of minority in the population
+    - pctymle: percent of young male in the population 
+    - Most of the wages - as wage rises, crime rates increase. Fed employees drive this most, whereas state employees drive this least
+  - Crime inhibitors appear to be:
+    - prbarr: The probability of arrest
+    - prbconv: The probability of conviction
+    
+    Note probability of a custodial term nor the length of that term does not appear to be a strong crime deterant
+    Police per capita is an odd one, probably good one to remove?
+  
+```{r}
+# Load the data from CSV.
+crime.dat <- read.csv('crime_v2.csv')
+library(car)
+scatterplotMatrix( ~  + crmrte + density + taxpc + pctmin80 + pctymle, data = crime.dat,
+                   main = "Scatterplot Matrix for Key crime drivers")
+scatterplotMatrix( ~  + crmrte + prbarr + prbconv, data = crime.dat,
+                   main = "Scatterplot Matrix for Key crime inhibitors")
+```
+
+  
 
 ## Data Integrity and Cleaning
 
 ```{r}
-# Load the data from CSV.
-crime.dat <- read.csv('crime_v2.csv')
-
 # Clean the data: Rows 92-97 are empty, so removing them.
 crime.dat <- na.omit(crime.dat)
 ```
 
-# The Model
+## The Model
 
-# The Regression Table
+## The Regression Table
 
-# Omitted Variables
-
-# Conclusion
+## Omitted Variables
+ - Do we need all the wages, if we have a value for tax revenue per capita?
+ - police per capita?
+## Conclusion
