@@ -17,10 +17,23 @@ knitr::opts_chunk$set(echo = TRUE)
  - Not going to include costing of any measures
  - Exclude anything else?
 
+**YZ**:
+ - Political campaign: what side are we on? This will determine if we are criticizing what happened in the past and suggesting completely new policies (challenger) or highlighting what policies worked and how to make them even more efficient (incumbent)
+
 ## Exploratory Data Analysis
+
+**YZ**: Before doing any EDA, I think we should form initial hypothesis for each variable in the dataset. For example, we could build a table that contains the following columns (it's similar to what you described below, but with more details and for each variable):
+  - Variable name
+  - Do we expect it to have impact on crime?
+  - If yes, then what is the expected sign of the relationship? I.e., crime driver or suppressor.
+  - If yes, is it controllable or uncontrollable factor of crime? This would determine which variables we'll use to suggest policies. For example, Density is probably uncontrollable because there are no obvious policies to change population density. However, police per capita is one of the actionable factors
+
+
   - 2 types of factor: crime drivers; crime surpressors 
   - Some exceptional data in county 185, presents weekly service wages 10 times larger than any other weekly wage which is skewing the dataset
   - Some exceptional data in county 115 where police per capita is double the nearest value
+  - **YZ**: I found some other issues with the data (probability variables > 1). Take a look at my EDA file.
+  
   - Crime drivers apprear to be:
     - density: Population Density
     - taxpc: Tax revenue per capita
@@ -30,6 +43,8 @@ knitr::opts_chunk$set(echo = TRUE)
   - Crime inhibitors appear to be:
     - prbarr: The probability of arrest
     - prbconv: The probability of conviction
+  - **YZ**: We can use correlation barplot from my EDA analysis to separate these factors
+    
     
     Note probability of a custodial term nor the length of that term does not appear to be a strong crime deterant
     Police per capita is an odd one, probably good one to remove?
@@ -58,6 +73,9 @@ crime.dat <- na.omit(crime.dat)
 ## The Regression Table
 
 ## Omitted Variables
+
+**YZ**: I think we should not omit any variables in the dataset. I think, omitted variable analysis is usually performed for variables that we don't actually have
+
  - Do we need all the wages, if we have a value for tax revenue per capita?
  - police per capita?
 ## Conclusion
