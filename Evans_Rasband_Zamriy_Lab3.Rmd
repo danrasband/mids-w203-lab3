@@ -1,7 +1,7 @@
 ---
 title: 'Lab 3: Reducing Crime (DRAFT)'
 subtitle: 'W203 Statistics'
-author: 'Luke Evans and Daniel Rasband'
+author: 'Luke Evans, Daniel Rasband, and Yulia Zamriy'
 date: \today
 output: pdf_document
 ---
