@@ -1,0 +1,153 @@
+---
+title: "Lab3_YZ_EDA"
+author: "Yulia Zamriy"
+date: "March 18, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+setwd("/home/yulia/Documents/MIDS/W203/Lab_3/")
+crime <- read.csv("crime_v2.csv", stringsAsFactors = FALSE)
+crime <- na.omit(crime)
+```
+
+```{r}
+summary(crime$crmrte)
+```
+
+```{r}
+hist(crime$crmrte)
+```
+
+```{r}
+crime$prbconv <- as.numeric(crime$prbconv)
+```
+
+
+```{r}
+summary(crime$prbarr)
+summary(crime$prbconv)
+summary(crime$prbpris)
+```
+
+```{r}
+nrow(crime[crime$prbarr >= 1,])
+```
+```{r}
+nrow(crime[crime$prbconv >= 1,])
+```
+
+```{r}
+crime$exclude <- 0
+crime[crime$prbarr > 1,]$exclude <- 1
+crime[crime$prbconv > 1,]$exclude <- 1
+table(crime$exclude)
+```
+
+```{r}
+summary(crime$avgsen)
+```
+```{r}
+summary(crime$polpc)
+```
+
+```{r}
+summary(crime$density)
+```
+
+```{r}
+summary(crime$taxpc)
+```
+
+```{r}
+mean(crime$west)
+mean(crime$central)
+mean(crime$urban)
+```
+
+```{r}
+summary(crime$pctmin80)
+```
+
+```{r}
+summary(crime$wcon)
+```
+
+```{r}
+summary(crime$wtuc)
+```
+
+```{r}
+summary(crime$wtrd)
+```
+
+```{r}
+summary(crime$wfir)
+```
+
+```{r}
+summary(crime$wser)
+```
+
+```{r}
+summary(crime$wmfg)
+```
+
+```{r}
+summary(crime$wfed)
+```
+
+```{r}
+summary(crime$wsta)
+```
+
+```{r}
+summary(crime$wloc)
+```
+
+```{r}
+summary(crime$mix)
+```
+
+```{r}
+summary(crime$pctymle)
+```
+
+```{r}
+crime[crime$wser > 2000,]$exclude <- 1
+```
+
+```{r}
+crime_sub <- subset(crime, exclude == 0)
+crime_sub$exclude <- NULL
+crime_cor <- cor(crime_sub)[3,-c(1,2,3)]
+crime_cor <- crime_cor[order(crime_cor)]
+```
+
+```{r}
+
+crime_cor_lab <- ifelse(crime_cor < 0, crime_cor-0.15, crime_cor)
+
+par(mar = c(2,8,1,0))
+b <- barplot(crime_cor,
+        horiz = TRUE,
+        las = 1,
+        xaxt = "n",
+        xlim = c(-1,1),
+        main = "Correlation of Crime Rate with Other Variables")
+text(x = crime_cor_lab, 
+     y = b, 
+     label = round(crime_cor,2), 
+     pos = 4, 
+     cex = 0.6)
+axis(1, 
+     at = seq(-1,1, by = 0.2), 
+     labels = seq(-1,1, by = 0.2),
+     cex.axis = 0.6)
+```
+
+
