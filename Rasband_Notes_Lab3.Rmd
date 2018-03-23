@@ -1,0 +1,99 @@
+---
+title: "Lab 3: Reducing Crime - Dan's Notes"
+subtitle: 'W203 - Statistics'
+author: 'Dan Rasband'
+date: \today
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Notes to Keep in Mind
+
+1. What do you want to measure? Make sure you identify variables that will be relevant to the concerns of the political campaign.
+2. What transformations should you apply to each variable? This is very important because transformations can reveal linearities in the data, make our results relevant, or help us meet model assumptions.
+3. Are your choices supported by EDA? You will likely start with some general EDA to detect anomalies (missing values, top-coded variables, etc.). From then on, your EDA should be interspersed with your model building. Use visual tools to guide your decisions.
+4. What covariates help you identify a causal effect? What covariates are problematic, either due to multicollinearity, or because they will absorb some of a causal effect you want to measure?
+
+### Three models:
+
+#### Model 1
+
+One model with only the explanatory variables of key interest (possibly transformed, as determined by your EDA), and no other covariates.
+
+#### Model 2
+
+One model that includes key explanatory variables and only covariates that you believe increase the accuracy of your results without introducing substantial bias (for example, you should not include outcome variables that will absorb some of the causal effect you are interested in). This model should strike a balance between accuracy and parsimony and reflect your best understanding of the determinants of crime.
+
+#### Model 3
+
+One model that includes the previous covariates, and most, if not all, other covariates. A key purpose of this model is to demonstrate the robustness of your results to model specification.
+
+
+## Exploratory Data Analysis
+
+```{r}
+# Load the data from CSV.
+crime.dat <- read.csv('crime_v2.csv')
+
+# Clean the data: Rows 92-97 are empty, so removing them.
+crime.dat <- na.omit(crime.dat)
+
+# Prepare a .RData for easier sharing and usage.
+variable <- c(
+  'county', 'year', 'crmrate', 'prbarr', 'prbconv', 'prbpris', 'avgsen', 
+  'polpc', 'density', 'taxpc', 'west', 'central', 'urban', 'pctmin80', 'wcon', 
+  'wtuc', 'wtrd', 'wfir', 'wser', 'wmfg', 'wfed', 'wsta', 'wloc', 'mix', 
+  'pctymle'
+)
+label <- c(
+  'county identifer', '1987', 'crimes committed per person', 
+  'probability of arrest', 'probability of conviction', 
+  'probability of prison sentence', 'avg. sentence, days', 
+  'police per capita', 'people per sq. mile', 'tax revenue per capita', 
+  '=1 if in western N.C.', '=1 if in central N.C.', '=1 if in SMSA', 
+  'perc. minority, 1980', 'weekly wage, construction', 
+  'wkly wge, trns, util, commun', 'wkly wge, whlesle, retail trade', 
+  'wkly wge, fin, ins, real est', 'wkly wge, service industry', 
+  'wkly wge, manufacturing', 'wkly wge, fed employees', 
+  'wkly wge, state employees', 'wkly wge, local gov emps', 
+  'offense mix: face-to-face/other', 'percent young male'
+)
+desc <- data.frame(variable, label)
+data <- crime.dat
+save(data, desc, file = 'crime_v2.RData')
+save.image()
+
+# Load the newly-generated .RData file.
+load('crime_v2.RData')
+```
+
+
+
+```{r}
+hist(data$crmrte, main = 'Crime Rate', xlab = '')
+```
+
+```{r}
+showScatterPlotMatrices <- function(dependent, independents, data) {
+  make.formula <- function(independent) {
+    f <- paste(c(dependent, independent), collapse = ' ~ ')
+    return(as.formula(f))
+  }
+  formulas <- mapply(make.formula, independents)
+  plot.relation <- function(f) {
+    model <- lm(f, data = data)
+    description <- as.character(desc$label[as.character(desc$variable) == as.character(f[3])])
+    plot(model, which = 5, main = paste(c('Effect of', description, 'on crime rate', sep = ' ')))
+    plot(f, data = data, main = paste(c('Effect of', description, 'on crime rate', sep = ' ')))
+    abline(model)
+    cat("R^2:", summary(model)$r.squared)
+  }
+  mapply(plot.relation, formulas)
+}
+crime.vars <- names(crime.dat)
+crime.vars <- crime.vars[! crime.vars %in% c('crmrte', 'year')]
+plots <- showScatterPlotMatrices('crmrte', crime.vars, data)
+```
