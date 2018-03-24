@@ -262,7 +262,9 @@ crmrte_lm0 <- lm(crmrte ~ 1,
                  data = crime_sub)
 crmrte_lm_all <- lm(crmrte_formula_all,
                  data = crime_sub)
-crmrte_lm_step <- step(crmrte_lm0, scope=list(lower=crmrte_lm0, upper=crmrte_lm_all), direction="both")
+crmrte_lm_step <- step(crmrte_lm0, scope=list(lower=crmrte_lm0, upper=crmrte_lm_all), 
+                       direction="both",
+                       trace = FALSE)
 summary(crmrte_lm_step)
 ```
 
