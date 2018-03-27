@@ -169,30 +169,38 @@ control <- c("Yes", "Yes", "Yes", "Yes",
              "Yes", "Yes", "Yes",
              "Yes", "Yes", "Yes", "Yes", 
              "Yes", "Yes", "No", "No")
-desc <- data.frame(ind_variables, var_labels, impact, control)
+cor_w_crimerate <- round(cor(crime_sub)[3,-c(1,2,3)],2)
+desc <- data.frame(ind_variables, var_labels, impact, cor_w_crimerate, control,
+                   row.names = NULL)
 colnames(desc) <- c("Explanatory Variables", 
                     "Explanation", 
                     "Expected Impact on Crime Rate",
-                    "Can Gov Impact on This?")
-# col_labels <-  c(ind_variables = "Explanatory Variables", 
-#                  var_labels = "Explanation")
-# desc <- upData(desc, labels = col_labels)
+                    "Correlation w/ Crime Rate",
+                    "Can Gov Impact This?")
 ```
 
-```{r}
-kable(desc, booktabs = TRUE) %>%
+```{r table1, as.is = TRUE}
+kable(desc, booktabs = TRUE, align = c("llccc")) %>%
   kable_styling(latex_options = c("scale_down"),
                 full_width = FALSE) %>% 
   row_spec(0, bold = TRUE) %>% 
   column_spec(1, width = "8em") %>% 
   column_spec(3, width = "10em") %>% 
-  column_spec(4, width = "9em")
+  column_spec(4, width = "8em") %>% 
+  column_spec(5, width = "9em")
+```
+
+
+```{r}
+crime_sub$othergeo <- ifelse(crime_sub$west == 0 & crime_sub$central == 0, 1, 0)
+mean(crime_sub$west)
+mean(crime_sub$central)
+mean(crime_sub$othergeo)
 ```
 
 ```{r}
 crime_cor <- cor(crime_sub)[3,-c(1,2,3)]
 crime_cor <- crime_cor[order(crime_cor)]
-negative <- ifelse(crime_cor < 0, 1,0)
 ```
 
 ```{r}
@@ -201,7 +209,7 @@ crime_cor_lab <- ifelse(crime_cor < 0, crime_cor-0.15, crime_cor)
 
 par(mar = c(2,8,1,0))
 b <- barplot(crime_cor,
-        col = negative,
+        col = ifelse(crime_cor < 0, "red","blue"),
         horiz = TRUE,
         las = 1,
         xaxt = "n",
@@ -244,27 +252,169 @@ ggplot(data = cor_mat_upper2, aes(Var1, Var2, fill = value)) +
 ```
 
 ```{r}
-ind_vars_all <- c("prbarr", "prbconv", "prbpris", "avgsen", "polpc", "density", "taxpc",
-               "west", "central", "urban", "pctmin80", "wcon", "wtuc", "wtrd", "wfir",
-               "wser", "wmfg", "wfed", "wsta", "wloc", "mix", "pctymle")
-ind_vars1 <- c("polpc", "taxpc","wfed","pctymle","avgsen")
+crime_sub$region <- ifelse(crime_sub$west == 1, "west",
+                           ifelse(crime_sub$central == 1, "central", "other"))
 ```
 
 ```{r}
+crmrte_reg <- aggregate(crmrte ~ region, data = crime_sub, mean)
+density_reg <- aggregate(density ~ region, data = crime_sub, mean)
+urban_reg <- aggregate(urban ~ region, data = crime_sub, mean)
+polpc_reg <- aggregate(polpc ~ region, data = crime_sub, mean)
+cbind(crmrte_reg, density_reg[2], polpc_reg[2])
+```
+
+```{r}
+ggplot(crime_sub, aes(density, crmrte)) +
+  geom_point() +
+  facet_grid(region~.) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+ggplot(crime_sub, aes(polpc, crmrte)) +
+  geom_point() +
+  facet_grid(region~.) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+ggplot(crime_sub, aes(taxpc, crmrte)) +
+  geom_point() +
+  facet_grid(region~.) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+ggplot(crime_sub, aes(avgsen, crmrte)) +
+  geom_point() +
+  facet_grid(region~.) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+
+```{r}
+ggplot(crime_sub, aes(taxpc, polpc)) +
+  geom_point() +
+  facet_grid(region~.) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+showScatterPlotMatrices <- function(dependent, independents, data) {
+  make.formula <- function(independent) {
+    f <- paste(c(dependent, independent), collapse = ' ~ ')
+    return(as.formula(f))
+  }
+  formulas <- mapply(make.formula, independents)
+  plot.relation <- function(f) {
+    model <- lm(f, data = data)
+    r2 <- round(summary(model)$r.squared,2)
+    description <- 
+      as.character(desc$Explanation[as.character(desc$`Explanatory Variables`) == as.character(f[3])])
+    test <- paste(deparse(substitute(data)),names(model$coefficients[2]),sep="$")
+    xval <- 
+      min(eval(parse(text = paste(deparse(substitute(data)),names(model$coefficients[2]),sep="$"))))
+    par(mar = c(4,4,4,4))
+    plot(f,
+         data = data,
+         main = paste(c('Effect of', description, 'on crime rate')))
+    abline(model, col = "darkblue")
+    text(x = xval*1.1, y = 0.09, bquote(R^2 == .(r2)), col = "darkblue")
+  }
+  mapply(plot.relation, formulas)
+}
+wage_vars <- colnames(crime_sub)[grep("w", colnames(crime_sub))][-1]
+plots <- showScatterPlotMatrices('crmrte', wage_vars, crime_sub)
+```
+
+```{r}
+vars_wages <- c("wcon", "wtuc", "wtrd", "wfir",
+              "wser", "wmfg", "wfed", "wsta", "wloc")
+crime_sub[paste(vars_wages,"ln",sep = ".")] <- log(crime_sub[vars_wages])
+crime_sub[paste(vars_wages,"sq",sep = ".")] <- (crime_sub[vars_wages])**2
+
+crime_sub_w1 <- subset(crime_sub, select = c("crmrte", vars_wages))
+crime_sub_w2 <- subset(crime_sub, select = c("crmrte", paste(vars_wages,"ln",sep = ".")))
+crime_sub_w3 <- subset(crime_sub, select = c("crmrte", paste(vars_wages,"sq",sep = ".")))
+wages_cor <- cbind(round(cor(crime_sub_w1)[1,-1],2),
+                   round(cor(crime_sub_w2)[1,-1],2),
+                   round(cor(crime_sub_w3)[1,-1],2))
+colnames(wages_cor) <- c("As is", "Log", "Squared")
+wages_cor <- melt(wages_cor)
+colnames(wages_cor) <- c("Wages", "Transformation", "Correlation")
+
+ggplot(data = wages_cor, aes(Wages, Correlation, fill = Transformation)) +
+  geom_col(position = "dodge")
+```
+
+```{r}
+vars_other <- c("prbarr", "prbconv", "prbpris", "avgsen", "polpc", "density", "taxpc",
+               "pctmin80", "mix", "pctymle")
+crime_sub[paste(vars_other,"sq",sep = ".")] <- (crime_sub[vars_other])**2
+
+crime_sub_o1 <- subset(crime_sub, select = c("crmrte", vars_other))
+crime_sub_o2 <- subset(crime_sub, select = c("crmrte", paste(vars_other,"sq",sep = ".")))
+others_cor <- cbind(round(cor(crime_sub_o1)[1,-1],2),
+                   round(cor(crime_sub_o2)[1,-1],2))
+colnames(others_cor) <- c("As is", "Squared")
+others_cor <- melt(others_cor)
+colnames(others_cor) <- c("OtherVars", "Transformation", "Correlation")
+
+ggplot(data = others_cor, aes(OtherVars, Correlation, fill = Transformation)) +
+  geom_col(position = "dodge")
+```
+
+```{r}
+ind_vars1 <- c("density", "prbarr", "polpc", "taxpc","pctymle","pctmin80")
 crmrte_formula1 <- as.formula(paste("crmrte ~", paste(ind_vars1, collapse = "+"), sep = ""))
 crmrte_lm1 <- lm(crmrte_formula1, data = crime_sub)
 summary(crmrte_lm1)
 ```
 
 ```{r}
+ind_vars_all <- c("prbarr", "prbconv", "prbpris", "avgsen", "polpc", "density", "taxpc",
+               "west", "central", "urban", "pctmin80", "wcon", "wtuc", "wtrd", "wfir",
+               "wser", "wmfg", "wfed", "wsta", "wloc", "mix", "pctymle")
+               # paste(vars_wages,"ln",sep = "."), 
+               # paste(vars_wages,"sq",sep = "."), 
+               # paste(vars_other,"sq",sep = "."))
+
 crmrte_formula_all <- as.formula(paste("crmrte ~", paste(ind_vars_all, collapse = "+"), sep = ""))
-crmrte_lm0 <- lm(crmrte ~ 1,
-                 data = crime_sub)
+# crmrte_lm0 <- lm(crmrte ~ 1,
+#                  data = crime_sub)
 crmrte_lm_all <- lm(crmrte_formula_all,
                  data = crime_sub)
-crmrte_lm_step <- step(crmrte_lm0, scope=list(lower=crmrte_lm0, upper=crmrte_lm_all), 
+crmrte_lm_step <- step(crmrte_lm1, scope=list(lower=crmrte_lm1, upper=crmrte_lm_all), 
                        direction="both",
                        trace = FALSE)
 summary(crmrte_lm_step)
 ```
 
+```{r}
+sel_vars_pvals <- summary(crmrte_lm_step)$coefficients[-1,4]
+sel_vars <- names(sel_vars_pvals[sel_vars_pvals < 0.05])
+
+crmrte_formula2 <- as.formula(paste("crmrte ~", paste(sel_vars, collapse = "+"), sep = ""))
+crmrte_lm2 <- lm(crmrte_formula2, data = crime_sub)
+summary(crmrte_lm2)
+```
+
+
+```{r}
+sel_vars_cut <- c("density",  "prbarr",   "polpc",    "taxpc",
+               "pctymle", "pctmin80", "wsta")
+
+crmrte_formula3 <- as.formula(paste("crmrte ~", paste(sel_vars_cut, collapse = "+"), sep = ""))
+crmrte_lm3 <- lm(crmrte_formula3, data = crime_sub)
+summary(crmrte_lm3)
+```
+
+```{r}
+sel_vars_inter <- c("density",  "prbarr",   "polpc",  
+               "pctymle", "pctmin80", "wsta", "west*polpc")
+
+crmrte_formula3 <- as.formula(paste("crmrte ~", paste(sel_vars_inter, collapse = "+"), sep = ""))
+crmrte_lm3 <- lm(crmrte_formula3, data = crime_sub)
+summary(crmrte_lm3)
+```
