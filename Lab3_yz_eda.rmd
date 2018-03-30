@@ -15,11 +15,19 @@ options(knitr.table.format = "latex")
 #install.packages("viridisLite")
 #install.packages("viridis")
 #install.packages("Hmisc")
+# install.packages("car")
+# install.packages("lmtest")
+# install.packages("sandwich")
+# install.packages("stargazer")
 library(knitr)
 library(kableExtra)
 library(Hmisc)
 library(reshape2)
 library(ggplot2)
+library(car)
+library(lmtest)
+library(sandwich)
+library(stargazer)
 ```
 
 ```{r}
@@ -33,7 +41,9 @@ summary(crime$crmrte)
 ```
 
 ```{r}
-hist(crime$crmrte)
+par(mfrow=c(1,2))
+hist(crime$crmrte, breaks = 15)
+hist(log(crime$crmrte), breaks = 15)
 ```
 
 ```{r}
@@ -278,6 +288,14 @@ ggplot(crime_sub, aes(polpc, crmrte)) +
   geom_smooth(method = "lm", se = FALSE)
 ```
 
+
+```{r}
+ggplot(crime_sub, aes(pctymle, crmrte)) +
+  geom_point() +
+  facet_grid(region~.) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
 ```{r}
 ggplot(crime_sub, aes(taxpc, crmrte)) +
   geom_point() +
@@ -299,34 +317,13 @@ ggplot(crime_sub, aes(taxpc, polpc)) +
   facet_grid(region~.) +
   geom_smooth(method = "lm", se = FALSE)
 ```
-
 ```{r}
-showScatterPlotMatrices <- function(dependent, independents, data) {
-  make.formula <- function(independent) {
-    f <- paste(c(dependent, independent), collapse = ' ~ ')
-    return(as.formula(f))
-  }
-  formulas <- mapply(make.formula, independents)
-  plot.relation <- function(f) {
-    model <- lm(f, data = data)
-    r2 <- round(summary(model)$r.squared,2)
-    description <- 
-      as.character(desc$Explanation[as.character(desc$`Explanatory Variables`) == as.character(f[3])])
-    test <- paste(deparse(substitute(data)),names(model$coefficients[2]),sep="$")
-    xval <- 
-      min(eval(parse(text = paste(deparse(substitute(data)),names(model$coefficients[2]),sep="$"))))
-    par(mar = c(4,4,4,4))
-    plot(f,
-         data = data,
-         main = paste(c('Effect of', description, 'on crime rate')))
-    abline(model, col = "darkblue")
-    text(x = xval*1.1, y = 0.09, bquote(R^2 == .(r2)), col = "darkblue")
-  }
-  mapply(plot.relation, formulas)
-}
-wage_vars <- colnames(crime_sub)[grep("w", colnames(crime_sub))][-1]
-plots <- showScatterPlotMatrices('crmrte', wage_vars, crime_sub)
+ggplot(crime_sub, aes(pctymle, polpc)) +
+  geom_point() +
+  facet_grid(region~.) +
+  geom_smooth(method = "lm", se = FALSE)
 ```
+
 
 ```{r}
 vars_wages <- c("wcon", "wtuc", "wtrd", "wfir",
@@ -376,9 +373,6 @@ summary(crmrte_lm1)
 ind_vars_all <- c("prbarr", "prbconv", "prbpris", "avgsen", "polpc", "density", "taxpc",
                "west", "central", "urban", "pctmin80", "wcon", "wtuc", "wtrd", "wfir",
                "wser", "wmfg", "wfed", "wsta", "wloc", "mix", "pctymle")
-               # paste(vars_wages,"ln",sep = "."), 
-               # paste(vars_wages,"sq",sep = "."), 
-               # paste(vars_other,"sq",sep = "."))
 
 crmrte_formula_all <- as.formula(paste("crmrte ~", paste(ind_vars_all, collapse = "+"), sep = ""))
 # crmrte_lm0 <- lm(crmrte ~ 1,
@@ -395,19 +389,40 @@ summary(crmrte_lm_step)
 sel_vars_pvals <- summary(crmrte_lm_step)$coefficients[-1,4]
 sel_vars <- names(sel_vars_pvals[sel_vars_pvals < 0.05])
 
-crmrte_formula2 <- as.formula(paste("crmrte ~", paste(sel_vars, collapse = "+"), sep = ""))
-crmrte_lm2 <- lm(crmrte_formula2, data = crime_sub)
-summary(crmrte_lm2)
+sel_vars_cut <- c("density",  "prbarr",   "polpc",    "taxpc",
+                "pctymle", "pctmin80", "wsta")
+sel_vars_transf <- c("density",  "prbarr",   "polpc",  "polpc.sq",  "taxpc", "taxpc.sq",
+                     "pctymle", "pctmin80")
 ```
 
 
 ```{r}
-sel_vars_cut <- c("density",  "prbarr",   "polpc",    "taxpc",
-               "pctymle", "pctmin80", "wsta")
+max_vals <- data.frame(t(mapply(summary, crime_sub[,sel_vars_cut])[5:6,]))
+max_vals$Benchmarks <- round((max_vals$Max. - max_vals$X3rd.Qu.)/1.5 + max_vals$X3rd.Qu.,4)
+crime_sub$density_outl <- ifelse(crime_sub$density > max_vals["density",]$Benchmarks, 1, 0)
+crime_sub$prbarr_outl <- ifelse(crime_sub$prbarr > max_vals["prbarr",]$Benchmarks, 1, 0)
+crime_sub$polpc_outl <- ifelse(crime_sub$polpc > max_vals["polpc",]$Benchmarks, 1, 0)
+crime_sub$taxpc_outl <- ifelse(crime_sub$taxpc > max_vals["taxpc",]$Benchmarks, 1, 0)
+crime_sub$pctymle_outl <- ifelse(crime_sub$pctymle > max_vals["pctymle",]$Benchmarks, 1, 0)
+crime_sub$pctmin80_outl <- ifelse(crime_sub$pctmin80 > max_vals["pctmin80",]$Benchmarks, 1, 0)
+crime_sub$wsta_outl <- ifelse(crime_sub$wsta > max_vals["wsta",]$Benchmarks, 1, 0)
 
-crmrte_formula3 <- as.formula(paste("crmrte ~", paste(sel_vars_cut, collapse = "+"), sep = ""))
-crmrte_lm3 <- lm(crmrte_formula3, data = crime_sub)
-summary(crmrte_lm3)
+sel_vars_cut_outl <- paste(sel_vars_cut, "outl", sep = "_")
+crime_sub$outliers <- rowSums(crime_sub[,sel_vars_cut_outl])
+mapply(sum, crime_sub[,sel_vars_cut_outl])
+table(crime_sub$outliers)
+```
+
+```{r}
+crmrte_formula2 <- as.formula(paste("crmrte ~", paste(sel_vars_cut, collapse = "+"), sep = ""))
+crmrte_formula2sq <- as.formula(paste("crmrte ~", paste(sel_vars_transf, collapse = "+"), sep = ""))
+
+crmrte_lm2 <- lm(crmrte_formula2, data = crime_sub)
+crmrte_lm2sq <- lm(crmrte_formula2sq, data = crime_sub)
+
+summary(crmrte_lm2sq)
+crmrte_lm2sq_out <- lm(crmrte_formula2sq, data = subset(crime_sub, outliers == 0))
+cbind(summary(crmrte_lm2sq)$coefficients[,3], summary(crmrte_lm2sq_out)$coefficients[,3])
 ```
 
 ```{r}
@@ -417,4 +432,86 @@ sel_vars_inter <- c("density",  "prbarr",   "polpc",
 crmrte_formula3 <- as.formula(paste("crmrte ~", paste(sel_vars_inter, collapse = "+"), sep = ""))
 crmrte_lm3 <- lm(crmrte_formula3, data = crime_sub)
 summary(crmrte_lm3)
+crmrte_lm3_out <- lm(crmrte_formula3, data = subset(crime_sub, outliers == 0))
+cbind(summary(crmrte_lm3)$coefficients[,3], summary(crmrte_lm3_out)$coefficients[,3])
 ```
+
+```{r}
+crime_sub$crmrte.ln = log(crime_sub$crmrte)
+crmrte_formula3.ln <- as.formula(paste("crmrte.ln ~", paste(sel_vars_inter, collapse = "+"), sep = ""))
+crmrte_lm3.ln <- lm(crmrte_formula3.ln, data = crime_sub)
+summary(crmrte_lm3.ln)
+cbind(summary(crmrte_lm3)$coefficients[,3], summary(crmrte_lm3.ln)$coefficients[,3])
+```
+
+
+```{r}
+plot(crmrte_lm3)
+```
+
+```{r}
+par(mfrow=c(1,2))
+hist(crmrte_lm2$residuals, breaks = 15)
+#hist(crmrte_lm2sq$residuals, breaks = 15)
+hist(crmrte_lm3$residuals, breaks = 15)
+#hist(crmrte_lm3.ln$residuals, breaks = 15)
+```
+
+```{r}
+shapiro.test(crmrte_lm3$residuals)
+```
+
+```{r}
+bptest(crmrte_lm3)
+```
+
+```{r}
+coeftest(crmrte_lm3, vcov = vcovHC)
+```
+
+
+```{r}
+anova(crmrte_lm2,crmrte_lm3)
+```
+
+```{r}
+se.crmrte_lm2 <- sqrt(diag(vcovHC(crmrte_lm2)))
+se.crmrte_lm3 <- sqrt(diag(vcovHC(crmrte_lm3)))
+stargazer(crmrte_lm2,crmrte_lm3,
+          type = "text", omit.stat = "f",
+          se = list(se.crmrte_lm2, se.crmrte_lm3),
+          star.cutoffs = c(0.05, 0.01, 0.001))
+```
+
+
+```{r}
+showScatterPlotMatrices <- function(dependent, independents, data) {
+  make.formula <- function(independent) {
+    f <- paste(c(dependent, independent), collapse = ' ~ ')
+    return(as.formula(f))
+  }
+  formulas <- mapply(make.formula, independents)
+  plot.relation <- function(f) {
+    model <- lm(f, data = data)
+    r2 <- round(summary(model)$r.squared,2)
+    description <- 
+      as.character(desc$Explanation[as.character(desc$`Explanatory Variables`) == as.character(f[3])])
+    xval <- 
+      summary(eval(parse(text =
+                           paste(deparse(substitute(data)),names(model$coefficients[2]),sep="$"))))[2]
+    par(mar = c(4,4,4,4))
+    plot(f,
+         data = data,
+         main = paste(c('Effect of', description, 'on crime rate')))
+    abline(model, col = "darkblue")
+    text(x = xval, y = 0.09, bquote(R^2 == .(r2)), col = "darkblue")
+  }
+  mapply(plot.relation, formulas)
+}
+#wage_vars <- colnames(crime_sub)[grep("w", colnames(crime_sub))][-1]
+plots <- showScatterPlotMatrices('crmrte', sel_vars_cut, crime_sub)
+```
+
+
+
+

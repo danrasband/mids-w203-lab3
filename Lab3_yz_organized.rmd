@@ -1,0 +1,273 @@
+---
+title: "Lab3 YZ Draft"
+author: "Yulia Zamriy"
+date: "March 29, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(knitr.table.format = "latex")
+```
+
+```{r, echo=FALSE}
+# install.packages("kableExtra")
+# install.packages("viridisLite")
+# install.packages("viridis")
+# install.packages("Hmisc")
+# install.packages("car")
+# install.packages("lmtest")
+# install.packages("sandwich")
+# install.packages("stargazer")
+suppressMessages(library(knitr))
+suppressMessages(library(kableExtra))
+suppressMessages(library(Hmisc))
+suppressMessages(library(reshape2))
+suppressMessages(library(ggplot2))
+suppressMessages(library(car))
+suppressMessages(library(lmtest))
+suppressMessages(library(sandwich))
+suppressMessages(library(stargazer))
+```
+
+```{r}
+#setwd("/home/yulia/Documents/MIDS/W203/Lab_3/")
+crime <- read.csv("crime_v2.csv", stringsAsFactors = FALSE)
+crime <- na.omit(crime)
+#str(crime)
+```
+
+```{r}
+crime$prbconv <- as.numeric(crime$prbconv)
+crime$county <- NULL
+crime$year <- NULL
+```
+
+
+```{r}
+crime_summary <- data.frame(t(mapply(summary, crime)))
+#str(crime_summary)
+crime_summary <- crime_summary[,c("Min.","Mean","Max.")]
+crime_summary$Min. <- round(crime_summary$Min.,5)
+crime_summary$Mean <- round(crime_summary$Mean,4)
+crime_summary$Max. <- round(crime_summary$Max.,4)
+```
+
+
+```{r}
+kable(crime_summary, booktabs = TRUE) %>%
+  kable_styling(font_size = 7) 
+```
+
+```{r}
+nrow(crime[crime$prbarr >= 1,])
+nrow(crime[crime$prbconv >= 1,])
+```
+
+```{r}
+par(mfrow=c(1,2))
+plot(crime$prbarr, crime$crmrte)
+plot(crime$prbconv, crime$crmrte)
+```
+
+```{r}
+crime$prbarr_imp <- ifelse(crime$prbarr > 1, mean(crime$prbarr), crime$prbarr)
+summary(crime$prbarr)
+summary(crime$prbarr_imp)
+```
+
+```{r}
+crime$prbconv_imp <- ifelse(crime$prbconv > 1, 1, crime$prbconv)
+summary(crime$prbconv)
+summary(crime$prbconv_imp)
+```
+
+```{r}
+plot(crime$wser, crime$crmrte)
+```
+
+```{r}
+crime$wser_imp <- ifelse(crime$wser > 2000, mean(crime[crime$wser < 2000,]$wser), crime$wser)
+summary(crime$wser)
+summary(crime$wser_imp)
+```
+
+```{r}
+# Prepare a .RData for easier sharing and usage.
+ind_variables <- c( 'crmrte',
+  'prbarr_imp', 'prbconv_imp', 'prbpris', 'avgsen', 
+  'polpc', 'density', 'taxpc', 'west', 'central', 'urban', 'pctmin80', 'wcon', 
+  'wtuc', 'wtrd', 'wfir', 'wser_imp', 'wmfg', 'wfed', 'wsta', 'wloc', 'mix', 
+  'pctymle'
+)
+var_labels <- c('crimes committed per person',
+  'probability of arrest', 'probability of conviction', 
+  'probability of prison sentence', 'avg. sentence, days', 
+  'police per capita', 'people per sq. mile', 'tax revenue per capita', 
+  '=1 if in western N.C.', '=1 if in central N.C.', '=1 if in SMSA', 
+  'perc. minority, 1980', 'weekly wage, construction', 
+  'wkly wge, trns, util, commun', 'wkly wge, whlesle, retail trade', 
+  'wkly wge, fin, ins, real est', 'wkly wge, service industry', 
+  'wkly wge, manufacturing', 'wkly wge, fed employees', 
+  'wkly wge, state employees', 'wkly wge, local gov emps', 
+  'offense mix: face-to-face/other', 'percent young male'
+)
+impact <- c("Dependent",
+  "Negative" , "Negative", "Negative", "Negative",
+            "Negative", "Positive", "Negative", 
+            "Unclear", "Unclear", "Unclear", "Unclear",
+            "Negative","Negative","Negative",
+            "Negative", "Negative", "Negative", "Negative",
+            "Negative", "Negative", "Unclear","Positive")
+control <- c("NA","Yes", "Yes", "Yes", "Yes",
+             "Yes", "No", "Yes", 
+             "No", "No", "No","No",
+             "Yes", "Yes", "Yes",
+             "Yes", "Yes", "Yes", "Yes", 
+             "Yes", "Yes", "No", "No")
+cor_w_crimerate <- round(cor(crime[,ind_variables])[1,],2)
+desc <- data.frame(ind_variables, var_labels, impact, cor_w_crimerate, control,
+                   row.names = NULL)
+colnames(desc) <- c("Explanatory Variables", 
+                    "Explanation", 
+                    "Expected Impact on Crime Rate",
+                    "Correlation w/ Crime Rate",
+                    "Can Gov Impact This?")
+```
+
+```{r}
+kable(desc, booktabs = TRUE, align = c("llccc")) %>%
+  kable_styling(latex_options = c("scale_down"),
+                full_width = FALSE) %>% 
+  row_spec(0, bold = TRUE) %>% 
+  column_spec(1, width = "8em") %>% 
+  column_spec(3, width = "10em") %>% 
+  column_spec(4, width = "8em") %>% 
+  column_spec(5, width = "9em")
+```
+
+```{r}
+hist(crime$crmrte, breaks = 15)
+```
+
+```{r}
+crime$region <- ifelse(crime$west == 1, "west",
+                           ifelse(crime$central == 1, "central", "other"))
+aggregate(crmrte ~ region, data = crime, mean)
+```
+
+```{r}
+cor_mat <- round(cor(crime[,ind_variables]),2)
+get_upper_tri <- function(cor_mat){
+    cor_mat[lower.tri(cor_mat)]<- NA
+    return(cor_mat)
+}
+cor_mat_upper <- get_upper_tri(cor_mat)
+cor_mat_upper2 <- melt(cor_mat_upper, na.rm = TRUE)
+cor_mat_upper2[cor_mat_upper2$value == 1,]$value <- 0
+```
+
+```{r}
+ggplot(data = cor_mat_upper2, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                        midpoint = 0, limit = c(-1,1), space = "Lab",
+                        name = "Correlation") +
+  theme_minimal() +
+  scale_x_discrete(position = "top") +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 8, hjust = 0),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank()) +
+  coord_fixed()
+```
+
+
+```{r}
+vars_wages <- c("wcon", "wtuc", "wtrd", "wfir",
+              "wser", "wser_imp", "wmfg", "wfed", "wsta", "wloc")
+crime[paste(vars_wages,"ln",sep = ".")] <- log(crime[vars_wages])
+crime[paste(vars_wages,"sq",sep = ".")] <- (crime[vars_wages])**2
+
+vars_other <- c("prbarr", "prbarr_imp", "prbconv", "prbconv_imp", "prbpris", "avgsen", 
+                "polpc", "density", "taxpc", "pctmin80", "mix", "pctymle")
+crime[paste(vars_other,"ln",sep = ".")] <- log(crime[vars_other])
+crime[paste(vars_other,"sq",sep = ".")] <- (crime[vars_other])**2
+```
+
+```{r}
+ind_vars1 <- c("density", "prbarr_imp", "prbconv", "polpc", "taxpc","pctymle","pctmin80")
+crmrte_formula1 <- as.formula(paste("crmrte ~", paste(ind_vars1, collapse = "+"), sep = ""))
+crmrte_lm1 <- lm(crmrte_formula1, data = crime)
+summary(crmrte_lm1)
+```
+
+```{r}
+ind_vars2 <- c("density", "prbarr_imp", "prbconv", "polpc", "pctymle","pctmin80",
+               "west*polpc")
+crmrte_formula2 <- as.formula(paste("crmrte ~", paste(ind_vars2, collapse = "+"), sep = ""))
+crmrte_lm2 <- lm(crmrte_formula2, data = crime)
+summary(crmrte_lm2)
+```
+
+```{r}
+crmrte_formula2.ln <- as.formula(paste("log(crmrte) ~", paste(ind_vars2, collapse = "+"), sep = ""))
+crmrte_lm2.ln <- lm(crmrte_formula2.ln, data = crime)
+summary(crmrte_lm2.ln)
+```
+
+```{r}
+AIC(crmrte_lm1)
+AIC(crmrte_lm2)
+AIC(crmrte_lm2.ln)
+```
+
+
+```{r}
+par(mfrow=c(1,3))
+plot(crmrte_lm1, which = 1)
+plot(crmrte_lm2, which = 1)
+plot(crmrte_lm2.ln, which = 1)
+```
+
+```{r}
+par(mfrow=c(1,3))
+plot(crmrte_lm1, which = 2)
+plot(crmrte_lm2, which = 2)
+plot(crmrte_lm2.ln, which = 2)
+```
+
+```{r}
+par(mfrow=c(1,3))
+plot(crmrte_lm1, which = 3)
+plot(crmrte_lm2, which = 3)
+plot(crmrte_lm2.ln, which = 3)
+```
+
+```{r}
+par(mfrow=c(1,3))
+plot(crmrte_lm1, which = 4)
+plot(crmrte_lm2, which = 4)
+plot(crmrte_lm2.ln, which = 4)
+```
+
+```{r}
+par(mfrow=c(1,3))
+hist(crmrte_lm1$residuals, breaks = 15)
+hist(crmrte_lm2$residuals, breaks = 15)
+hist(crmrte_lm2.ln$residuals, breaks = 15)
+```
+
+```{r}
+coeftest(crmrte_lm2.ln, vcov = vcovHC)
+```
+
+
+```{r}
+se.crmrte_lm1 <- sqrt(diag(vcovHC(crmrte_lm1)))
+se.crmrte_lm2 <- sqrt(diag(vcovHC(crmrte_lm2)))
+se.crmrte_lm2.ln <- sqrt(diag(vcovHC(crmrte_lm2.ln)))
+stargazer(crmrte_lm1, crmrte_lm2,crmrte_lm2.ln,
+          type = "text", omit.stat = "f",
+          se = list(se.crmrte_lm1, se.crmrte_lm2, se.crmrte_lm2.ln),
+          star.cutoffs = c(0.05, 0.01, 0.001))
+```
