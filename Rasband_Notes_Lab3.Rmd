@@ -35,65 +35,161 @@ One model that includes the previous covariates, and most, if not all, other cov
 ## Exploratory Data Analysis
 
 ```{r}
+library(lmtest)
+```
+
+```{r}
 # Load the data from CSV.
-crime.dat <- read.csv('crime_v2.csv')
+crime.dat <- read.csv('crime_v2.csv', stringsAsFactors = FALSE)
 
 # Clean the data: Rows 92-97 are empty, so removing them.
 crime.dat <- na.omit(crime.dat)
 
 # Prepare a .RData for easier sharing and usage.
-variable <- c(
-  'county', 'year', 'crmrate', 'prbarr', 'prbconv', 'prbpris', 'avgsen', 
-  'polpc', 'density', 'taxpc', 'west', 'central', 'urban', 'pctmin80', 'wcon', 
-  'wtuc', 'wtrd', 'wfir', 'wser', 'wmfg', 'wfed', 'wsta', 'wloc', 'mix', 
+variables <- c(
+  'county', 'year', 'crmrte', 'prbarr', 'prbconv', 'prbpris', 'avgsen',
+  'polpc', 'density', 'taxpc', 'west', 'central', 'urban', 'pctmin80', 'wcon',
+  'wtuc', 'wtrd', 'wfir', 'wser', 'wmfg', 'wfed', 'wsta', 'wloc', 'mix',
   'pctymle'
 )
-label <- c(
-  'county identifer', '1987', 'crimes committed per person', 
-  'probability of arrest', 'probability of conviction', 
-  'probability of prison sentence', 'avg. sentence, days', 
-  'police per capita', 'people per sq. mile', 'tax revenue per capita', 
-  '=1 if in western N.C.', '=1 if in central N.C.', '=1 if in SMSA', 
-  'perc. minority, 1980', 'weekly wage, construction', 
-  'wkly wge, trns, util, commun', 'wkly wge, whlesle, retail trade', 
-  'wkly wge, fin, ins, real est', 'wkly wge, service industry', 
-  'wkly wge, manufacturing', 'wkly wge, fed employees', 
-  'wkly wge, state employees', 'wkly wge, local gov emps', 
+labels <- c(
+  'county identifer', '1987', 'crimes committed per person',
+  'probability of arrest', 'probability of conviction',
+  'probability of prison sentence', 'avg. sentence, days',
+  'police per capita', 'people per sq. mile', 'tax revenue per capita',
+  '=1 if in western N.C.', '=1 if in central N.C.', '=1 if in SMSA',
+  'perc. minority, 1980', 'weekly wage, construction',
+  'wkly wge, trns, util, commun', 'wkly wge, whlesle, retail trade',
+  'wkly wge, fin, ins, real est', 'wkly wge, service industry',
+  'wkly wge, manufacturing', 'wkly wge, fed employees',
+  'wkly wge, state employees', 'wkly wge, local gov emps',
   'offense mix: face-to-face/other', 'percent young male'
 )
-desc <- data.frame(variable, label)
-data <- crime.dat
-save(data, desc, file = 'crime_v2.RData')
-save.image()
-
-# Load the newly-generated .RData file.
-load('crime_v2.RData')
+crime.variables <- data.frame(variable = variables, label = labels)
 ```
 
-
+There is only one outlier worthy of dealing with. It's the weekly wage of people in the service industry (`wser`). It is unlikely that there is any county in North Carolina where the weekly wage of people in the service industry averages to greater than $2,000, so we deem it appropriate to impute a value for that outlier:
 
 ```{r}
-hist(data$crmrte, main = 'Crime Rate', xlab = '')
+plot(crmrte ~ wser, data = crime.dat)
+wser.mean <- mean(crime.dat[crime.dat$wser < 2000,]$wser)
+crime.dat$wser <- ifelse(crime.dat$wser > 2000, wser.mean, crime.dat$wser)
+```
+
+We also need the probability of conviction to be numeric:
+
+```{r}
+crime.dat$prbconv
+crime.dat$prbconv <- as.numeric(crime.dat$prbconv)
+```
+
+Impute probability of arrest, for kicks.
+
+```{r}
+crime.dat$prbarr_imp <- ifelse(crime.dat$prbarr > 1, mean(crime.dat$prbarr), crime.dat$prbarr)
+```
+
+Impute police per capita for one outlier:
+
+```{r}
+crime.dat$polpc <- ifelse(crime.dat$polpc > 0.005, mean(crime.dat$polpc[crime.dat$polpc <= 0.005]), crime.dat$polpc)
+```
+
+Let's take a look at the crime rate:
+
+```{r}
+hist(crime.dat$crmrte, main = 'Crime Rate', xlab = '')
+```
+
+## Interesting variables:
+
+### Probability of arrest: prbarr
+
+This variable is very relevant. Assuming that there is a general feeling amongst individuals that are likely to commit crimes that a city is likely to arrest criminals, this fear may help drive down crime rates. This particular variable, however, is prone to bias, because the crime rate statistic is at least partially collinear with the probability of arrest. Namely, we don't have a solid
+
+```{r, include=FALSE}
+model <- lm(log(crmrte) ~ prbarr + prbpris + prbconv + avgsen + polpc + density +
+              taxpc + west + central + urban + pctmin80 + wcon + wtuc + wtrd +
+              wfir + wser + wmfg + wfed + wsta + wloc + mix + pctymle,
+            data = crime.dat)
+plot(model, which = 2)
 ```
 
 ```{r}
+make.formula <- function(dependent, independents) {
+  f.independents <- paste(independents, collapse = ' + ')
+  f.string <- paste(dependent, f.independents, sep = ' ~ ')
+  return(as.formula(f.string))
+}
 showScatterPlotMatrices <- function(dependent, independents, data) {
-  make.formula <- function(independent) {
-    f <- paste(c(dependent, independent), collapse = ' ~ ')
-    return(as.formula(f))
-  }
-  formulas <- mapply(make.formula, independents)
+  formulas <- mapply(make.formula, dependent, independents)
   plot.relation <- function(f) {
-    model <- lm(f, data = data)
-    description <- as.character(desc$label[as.character(desc$variable) == as.character(f[3])])
-    plot(model, which = 5, main = paste(c('Effect of', description, 'on crime rate', sep = ' ')))
-    plot(f, data = data, main = paste(c('Effect of', description, 'on crime rate', sep = ' ')))
+    model <- lm(f, data = crime.dat)
+    var.name <- as.character(f[3])
+    label <- crime.variables$label[as.character(crime.variables$variable) == var.name]
+    description <- as.character(label)
+    par(mfrow = c(1, 2))
+    hist(crime.dat[, var.name], main = label, xlab = '')
+    plot.title <- paste(c('Effect of', description, 'on crime rate', sep = ' '))
+    plot(f, data = data, main = plot.title)
     abline(model)
     cat("R^2:", summary(model)$r.squared)
   }
   mapply(plot.relation, formulas)
 }
-crime.vars <- names(crime.dat)
-crime.vars <- crime.vars[! crime.vars %in% c('crmrte', 'year')]
-plots <- showScatterPlotMatrices('crmrte', crime.vars, data)
+vars.all <- as.character(crime.variables$variable)
+vars.independent <- vars.all[! vars.all %in% c('crmrte', 'county', 'year')]
+showScatterPlotMatrices('log(crmrte)', vars.independent, crime.dat)
+```
+
+```{r}
+cor(crime.dat)
+```
+
+```{r}
+crime.dat$polpc[crime.dat$polpc > 0.005] = mean(crime.dat$polpc)
+boxplot(crime.dat$polpc)
+model1 <- lm(log(crmrte) ~ density + prbarr + polpc, data = crime.dat)
+AIC(model1)
+model2 <- lm(log(crmrte) ~ density + prbarr + mix, data = crime.dat)
+AIC(model2)
+model3 <- lm(log(crmrte) ~ density + prbarr + prbconv + polpc + pctymle + pctmin80 + west*polpc, data = crime.dat)
+coefficients(model3)
+AIC(model3)
+model4 <- lm(log(crmrte) ~ density + prbarr, data = crime.dat)
+AIC(model4)
+```
+
+```{r}
+model5 <- lm(log(crmrte) ~ prbconv, data = crime.dat)
+AIC(model5)
+```
+
+```{r}
+yulias.model <- lm(log(crmrte) ~ density + prbarr_imp + prbconv + polpc + pctymle + pctmin80 + west*polpc, data = crime.dat)
+AIC(yulias.model)
+```
+
+Automatically find the models with the lowest AICs:
+
+```{r}
+vars.dependent <- 'log(crmrte)'
+model.all <- lm(make.formula(vars.dependent, c(vars.independent)), data = crime.dat)
+coefficients(model.all)
+plot(model.all)
+AIC(model.all)
+```
+
+```{r}
+cor(log(crime.dat$crmrte), crime.dat$pctymle + crime.dat$pctymle^2)
+```
+
+## Transformations EDA
+
+```{r}
+crime.squares <- crime.dat
+crime.squares$crmrte <- crime.dat$crmrte
+vars.dependent <- 'log(crmrte)'
+mapply(function(variable) crime.squares[, variable] = crime.squares[, variable]^2, vars.independent)
+showScatterPlotMatrices(vars.dependent, vars.independent, data = crime.squares)
 ```
