@@ -11,10 +11,10 @@ options(knitr.table.format = "latex")
 ```
 
 ```{r, echo=FALSE}
-# install.packages("kableExtra")
 # install.packages("viridisLite")
 # install.packages("viridis")
 # install.packages("Hmisc")
+# install.packages("kableExtra")
 # install.packages("car")
 # install.packages("lmtest")
 # install.packages("sandwich")
@@ -38,10 +38,20 @@ crime <- na.omit(crime)
 ```
 
 ```{r}
-crime$prbconv <- as.numeric(crime$prbconv)
+crime$prbconv2 <- as.numeric(crime$prbconv)
 crime$county <- NULL
 crime$year <- NULL
 ```
+
+```{r}
+crime_summary <- data.frame(t(mapply(summary, crime)))
+#str(crime_summary)
+crime_summary <- crime_summary[,c("Min.","Mean","Max.")]
+crime_summary$Min. <- round(crime_summary$Min.,5)
+crime_summary$Mean <- round(crime_summary$Mean,4)
+crime_summary$Max. <- round(crime_summary$Max.,4)
+```
+
 
 
 ```{r}
@@ -59,21 +69,17 @@ kable(crime_summary, booktabs = TRUE) %>%
   kable_styling(font_size = 7) 
 ```
 
-```{r}
-crime$region <- ifelse(crime$west == 1, "west",
-                           ifelse(crime$central == 1, "central", "other"))
-aggregate(crmrte ~ region, data = crime, mean)
-```
+
 
 ```{r}
 nrow(crime[crime$prbarr >= 1,])
-nrow(crime[crime$prbconv >= 1,])
+nrow(crime[crime$prbconv2 >= 1,])
 ```
 
 ```{r}
 par(mfrow=c(1,2))
 plot(crime$prbarr, crime$crmrte)
-plot(crime$prbconv, crime$crmrte)
+plot(crime$prbconv2, crime$crmrte)
 ```
 
 ```{r}
@@ -83,9 +89,9 @@ summary(crime$prbarr_imp)
 ```
 
 ```{r}
-crime$prbconv_imp <- ifelse(crime$prbconv > 1, 1, crime$prbconv)
-summary(crime$prbconv)
-summary(crime$prbconv_imp)
+crime$prbconv2_imp <- ifelse(crime$prbconv2 > 1, 1, crime$prbconv2)
+summary(crime$prbconv2)
+summary(crime$prbconv2_imp)
 ```
 
 ```{r}
@@ -106,6 +112,13 @@ ggplot(crime, aes(polpc, crmrte)) +
 ```
 
 ```{r}
+ggplot(crime, aes(polpc, taxpc)) +
+  geom_point() +
+  facet_grid(region~.) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
 crime$polpc_imp <- 
   ifelse(crime$polpc == max(crime$polpc), mean(crime[crime$west == 1,]$polpc), crime$polpc)
 summary(crime$polpc)
@@ -116,7 +129,7 @@ summary(crime$polpc_imp)
 ```{r}
 # Prepare a .RData for easier sharing and usage.
 ind_variables <- c( 'crmrte',
-  'prbarr_imp', 'prbconv_imp', 'prbpris', 'avgsen', 
+  'prbarr_imp', 'prbconv2_imp', 'prbpris', 'avgsen', 
   'polpc_imp', 'density', 'taxpc', 'west', 'central', 'urban', 'pctmin80', 'wcon', 
   'wtuc', 'wtrd', 'wfir', 'wser_imp', 'wmfg', 'wfed', 'wsta', 'wloc', 'mix', 
   'pctymle'
@@ -167,11 +180,6 @@ kable(desc, booktabs = TRUE, align = c("llccc")) %>%
   column_spec(5, width = "9em")
 ```
 
-```{r}
-par(mfrow=c(1,2))
-hist(crime$crmrte, breaks = 15)
-hist(log(crime$crmrte), breaks = 15)
-```
 
 
 
@@ -204,103 +212,178 @@ ggplot(data = cor_mat_upper2, aes(Var1, Var2, fill = value)) +
 ```{r}
 ind_vars_transf <- c("wcon", "wtuc", "wtrd", "wfir",
               "wser", "wser_imp", "wmfg", "wfed", "wsta", "wloc",
-              "prbarr", "prbarr_imp", "prbconv", "prbconv_imp", "prbpris", "avgsen", 
+              "prbarr", "prbarr_imp", "prbconv2", "prbconv2_imp", "prbpris", "avgsen", 
                 "polpc_imp", "density", "taxpc", "pctmin80", "mix", "pctymle")
 crime[paste(ind_vars_transf,"ln",sep = ".")] <- log(crime[ind_vars_transf])
 crime[paste(ind_vars_transf,"sq",sep = ".")] <- (crime[ind_vars_transf])**2
 ```
 
+### The Model Building Process
+
+#### Dependent variable
+
+Our main dependent variable is crime rate *crmrte*. It is defined as "Crimes committed per person". 
+After careful consideration, in order for us to understand the impact of our main causal effects (probability of arrest and probability of conviction) onto crime rate, we decided to transform our dependent variable by taking a natural log. This would allow us to interprete the coefficients of our predictive factors as elasticities: if probability of arrest goes up by x points, then the crimte rate decreases by y% (assuming our initial hypothesis is tru and *prbarr* has a negative effect).
+If we were to keep the variable as it is, we would interpret the coefficient for *prbarr* as: f probability of arrest goes up by x points, then the crimte rate decreases by y crimes per person. However, this interpretation does not allow us to judge the practical significance of the effect (is that y big of small?).
+
+Let's take a look at histograms for *crmrte* (as it is and transformed):
+
 ```{r}
-ind_vars0 <- c("density", "west", "prbarr_imp", "prbconv")
-crmrte_formula0 <- as.formula(paste("log(crmrte) ~", paste(ind_vars0, collapse = "+"), sep = ""))
-crmrte_lm0 <- lm(crmrte_formula0, data = crime)
-coeftest(crmrte_lm0)
-summary(crmrte_lm0)$adj.r.squared
+par(mfrow=c(1,2))
+hist(crime$crmrte, 
+     breaks = 15,
+     xlim = c(0,0.1),
+     col = "darkblue",
+     cex.main = 1,
+     cex.axis = 0.8,
+     xlab = "Crime Rate",
+     main = "Histogram for Crime Rate")
+hist(log(crime$crmrte), 
+     breaks = 15,
+     xlim = c(-6,-2),
+     cex.main = 1,
+     cex.axis = 0.8,
+     xlab = "Log of Crime Rate",
+     col = "darkgreen",
+     main = "Histogram for Log of Crime Rate")
 ```
 
+Based on the above charts, *crmrte* is skewed towards the right tale (there is a number of counties with large crime rates). The log of *crmrte*, on the other hand, looks normally distributed. This definition of the dependent variables might help us build a model with a better fit.
+
+#### Main control variables
+
+Our primary focus in this analysis is two variables *prbarr* and *prbconv* (the third probability variable *prbpris* has weak correlation with crime rate and didn't show up in any of our models as statistically significant. Most likely it's because the idea of prison sentence is too far from the act of crime and doesn't affect the behavior). We will try to understand how probability of arrest *prbarr* and probability of conviction *prbconv* impact crime rate. If they are strong causal factors, we can define policies that influence these two factors and, hence, help us lower crime rates across counties. 
+Earlier in this report, we hypothesised that these two variables will have negative impact on our dependent variable: the higher the probabilities of arrest and conviction, the lower the crime rate. 
+However, before building a model with these two variables, we want to make a case of including two more variables in our first model: *density* and *west*.
+First, consider the crime rate by region (we recoded the third region as "other" for analysis purposes):
 
 ```{r}
-ind_vars1 <- c("density", "prbarr_imp", "prbconv", "polpc_imp.ln",  "pctmin80")
+crime$region <- ifelse(crime$west == 1, "west",
+                           ifelse(crime$central == 1, "central", "other"))
+aggregate(crmrte ~ region, data = crime, mean)
+```
+
+Based on the table above, crime rate in West region is lower than in Central and Other. Hence, we need to control for regionality in order to get an unbiased read on two selected probability variables.
+On the other hand, density has the hieghest correlation with crime rate (0.73). And the chart below clearly support strong linear relationship between two variables:
+
+```{r}
+ggplot(crime, aes(density, crmrte)) +
+  geom_point() +
+  #facet_grid(region~.) +
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle("Crime Rate vs. Density")
+```
+
+We also know that *west* and *density* have different relationship with *crmrte* because even though crime rate is the lowest in the West, density is the highest in Central region. Hence, we need both *west* and *density* in our initial model to get unbiased estimates of *prbarr* and *prbconv*.
+
+```{r}
+aggregate(density ~ region, data = crime, mean)
+```
+
+**Note**: we tested *central* and *urban* in our models and they were not signicant predictors for crime rate.
+
+#### Model #1
+
+Our first model contains four variables: *density*, *west*, *prbarr*, *prbconv2*. The coefficients for these variables are:
+
+```{r}
+ind_vars1 <- c("density", "west", "prbarr", "prbconv2")
 crmrte_formula1 <- as.formula(paste("log(crmrte) ~", paste(ind_vars1, collapse = "+"), sep = ""))
 crmrte_lm1 <- lm(crmrte_formula1, data = crime)
-coeftest(crmrte_lm1)
+crmrte_lm1$coefficients
+```
+
+Coefficient interpretation:
+
+- *density* 0.15: for each person per sq.mile increase in density, crime rate increases by 0.15% when everything else stays the same
+
+- *west* -0.36: crime rate in the West is 0.36% lower than in Central and Other regions on average (and controling for all other factors)
+
+- *prbarr* -1.27: for each point increase in probability of arrest crime rate decreases by 1.27%
+
+- *prbconv* -0.55: for each point increase in probability of arrest crime rate decreases by 0.55%
+
+As we can see, our initial hypothesis has been confirmed: both probability variables have negative impact on crime rate. Moreover, one-point change in probability of arrest has larger impact on crime rate than one-point change in probability of conviction. This confirms our hypothesis that probability of arrest has stronger effect on crime rate because it's closer to the act of crime (being arrested is easier to imagine than being convicted).
+
+The adj $R^2$ for this model is 67.7%:
+
+```{r}
 summary(crmrte_lm1)$adj.r.squared
 ```
 
+And all of the coefficients are statistically significant when we adjust for heteroscadasticity:
+
 ```{r}
-ind_vars2 <- c("density", "west","prbarr_imp", "prbconv", "polpc_imp.ln", "pctmin80",
+coeftest(crmrte_lm1, vcov = vcovHC)
+```
+
+**Note**: we will analyze the residuals later on, after we develop all three models.
+
+```{r}
+ind_vars2 <- c("density", "west", "prbarr", "prbconv2", "polpc_imp.ln", "pctmin80",
                "west*polpc_imp.ln")
 crmrte_formula2 <- as.formula(paste("log(crmrte) ~", paste(ind_vars2, collapse = "+"), sep = ""))
 crmrte_lm2 <- lm(crmrte_formula2, data = crime)
-coeftest(crmrte_lm2)
+coeftest(crmrte_lm2, vcov = vcovHC)
 summary(crmrte_lm2)$adj.r.squared
 ```
 
 ```{r}
-ind_vars_all <- c("prbarr_imp", "prbconv", "prbpris", "avgsen", "polpc_imp.ln", "density", "taxpc.ln",
+ind_vars_all <- c("prbarr_imp", "prbconv2", "prbpris", "avgsen", "polpc_imp.ln", "density", "taxpc.ln",
                "west", "central", "urban", "pctmin80", "wcon.ln", "wtuc.ln", "wtrd.ln", "wfir.ln",
                "wser_imp.ln", "wmfg.ln", "wfed.ln", "wsta.ln", "wloc.ln", "mix", "pctymle")
 crmrte_formula_all <- as.formula(paste("log(crmrte) ~", paste(ind_vars_all, collapse = "+"), sep = ""))
 crmrte_lm_all <- lm(crmrte_formula_all, data = crime)
-coeftest(crmrte_lm_all)
+coeftest(crmrte_lm_all, vcov = vcovHC)
 summary(crmrte_lm_all)$adj.r.squared
 ```
 
 ```{r}
-AIC(crmrte_lm0)
+AIC(crmrte_lm1)
 AIC(crmrte_lm2)
 AIC(crmrte_lm_all)
 ```
 
 ```{r}
 par(mfrow=c(1,3))
-plot(crmrte_lm0, which = 1)
+plot(crmrte_lm1, which = 1)
 plot(crmrte_lm2, which = 1)
 plot(crmrte_lm_all, which = 1)
 ```
 
 ```{r}
 par(mfrow=c(1,3))
-plot(crmrte_lm0, which = 2)
+plot(crmrte_lm1, which = 2)
 plot(crmrte_lm2, which = 2)
 plot(crmrte_lm_all, which = 2)
 ```
 
 ```{r}
 par(mfrow=c(1,3))
-plot(crmrte_lm0, which = 3)
+plot(crmrte_lm1, which = 3)
 plot(crmrte_lm2, which = 3)
 plot(crmrte_lm_all, which = 3)
 ```
 
 ```{r}
 par(mfrow=c(1,3))
-plot(crmrte_lm0, which = 5)
+plot(crmrte_lm1, which = 5)
 plot(crmrte_lm2, which = 5)
 plot(crmrte_lm_all, which = 5)
 ```
 
 ```{r}
-check_vars <- c("region","density","prbarr_imp", "prbconv", "polpc", "wfed", "pctmin80")
-crime[51, check_vars]
-```
-
-```{r}
-mapply(summary,crime[,check_vars])
-```
-
-```{r}
 par(mfrow=c(1,3))
-hist(crmrte_lm0$residuals, breaks = 15)
+hist(crmrte_lm1$residuals, breaks = 15)
 hist(crmrte_lm2$residuals, breaks = 15)
 hist(crmrte_lm_all$residuals, breaks = 15)
 ```
 ```{r}
-se.crmrte_lm0 <- sqrt(diag(vcovHC(crmrte_lm0)))
+se.crmrte_lm1 <- sqrt(diag(vcovHC(crmrte_lm1)))
 se.crmrte_lm2 <- sqrt(diag(vcovHC(crmrte_lm2)))
 se.crmrte_lm_all <- sqrt(diag(vcovHC(crmrte_lm_all)))
-stargazer(crmrte_lm0, crmrte_lm2,crmrte_lm_all,
+stargazer(crmrte_lm1, crmrte_lm2,crmrte_lm_all,
           type = "text", omit.stat = "f",
-          se = list(se.crmrte_lm0, se.crmrte_lm2, se.crmrte_lm_all),
+          se = list(se.crmrte_lm1, se.crmrte_lm2, se.crmrte_lm_all),
           star.cutoffs = c(0.05, 0.01, 0.001))
 ```
