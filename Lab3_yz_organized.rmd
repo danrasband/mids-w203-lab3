@@ -147,7 +147,9 @@ kable(desc, booktabs = TRUE, align = c("llccc")) %>%
 ```
 
 ```{r}
+par(mfrow=c(1,2))
 hist(crime$crmrte, breaks = 15)
+hist(log(crime$crmrte), breaks = 15)
 ```
 
 ```{r}
@@ -183,91 +185,96 @@ ggplot(data = cor_mat_upper2, aes(Var1, Var2, fill = value)) +
 
 
 ```{r}
-vars_wages <- c("wcon", "wtuc", "wtrd", "wfir",
-              "wser", "wser_imp", "wmfg", "wfed", "wsta", "wloc")
-crime[paste(vars_wages,"ln",sep = ".")] <- log(crime[vars_wages])
-crime[paste(vars_wages,"sq",sep = ".")] <- (crime[vars_wages])**2
-
-vars_other <- c("prbarr", "prbarr_imp", "prbconv", "prbconv_imp", "prbpris", "avgsen", 
+ind_vars_transf <- c("wcon", "wtuc", "wtrd", "wfir",
+              "wser", "wser_imp", "wmfg", "wfed", "wsta", "wloc",
+              "prbarr", "prbarr_imp", "prbconv", "prbconv_imp", "prbpris", "avgsen", 
                 "polpc", "density", "taxpc", "pctmin80", "mix", "pctymle")
-crime[paste(vars_other,"ln",sep = ".")] <- log(crime[vars_other])
-crime[paste(vars_other,"sq",sep = ".")] <- (crime[vars_other])**2
+crime[paste(ind_vars_transf,"ln",sep = ".")] <- log(crime[ind_vars_transf])
+crime[paste(ind_vars_transf,"sq",sep = ".")] <- (crime[ind_vars_transf])**2
 ```
 
 ```{r}
-ind_vars1 <- c("density", "prbarr_imp", "prbconv", "polpc", "taxpc","pctymle","pctmin80")
-crmrte_formula1 <- as.formula(paste("crmrte ~", paste(ind_vars1, collapse = "+"), sep = ""))
+ind_vars0 <- c("density", "west", "prbarr_imp", "prbconv")
+crmrte_formula0 <- as.formula(paste("log(crmrte) ~", paste(ind_vars0, collapse = "+"), sep = ""))
+crmrte_lm0 <- lm(crmrte_formula0, data = crime)
+coeftest(crmrte_lm0)
+summary(crmrte_lm0)$adj.r.squared
+```
+
+
+```{r}
+ind_vars1 <- c("density", "prbarr_imp", "prbconv", "taxpc.ln", "pctymle", "pctmin80")
+crmrte_formula1 <- as.formula(paste("log(crmrte) ~", paste(ind_vars1, collapse = "+"), sep = ""))
 crmrte_lm1 <- lm(crmrte_formula1, data = crime)
-summary(crmrte_lm1)
+coeftest(crmrte_lm1)
+summary(crmrte_lm1)$adj.r.squared
 ```
 
 ```{r}
-ind_vars2 <- c("density", "prbarr_imp", "prbconv", "polpc", "pctymle","pctmin80",
-               "west*polpc")
-crmrte_formula2 <- as.formula(paste("crmrte ~", paste(ind_vars2, collapse = "+"), sep = ""))
+ind_vars2 <- c("density", "west","prbarr_imp", "prbconv", "polpc.ln", "wfed.ln", "pctmin80",
+               "west*polpc.ln")
+crmrte_formula2 <- as.formula(paste("log(crmrte) ~", paste(ind_vars2, collapse = "+"), sep = ""))
 crmrte_lm2 <- lm(crmrte_formula2, data = crime)
-summary(crmrte_lm2)
+coeftest(crmrte_lm2)
+summary(crmrte_lm2)$adj.r.squared
 ```
 
 ```{r}
-crmrte_formula2.ln <- as.formula(paste("log(crmrte) ~", paste(ind_vars2, collapse = "+"), sep = ""))
-crmrte_lm2.ln <- lm(crmrte_formula2.ln, data = crime)
-summary(crmrte_lm2.ln)
+ind_vars_all <- c("prbarr_imp", "prbconv", "prbpris", "avgsen", "polpc.ln", "density", "taxpc.ln",
+               "west", "central", "urban", "pctmin80", "wcon.ln", "wtuc.ln", "wtrd.ln", "wfir.ln",
+               "wser_imp.ln", "wmfg.ln", "wfed.ln", "wsta.ln", "wloc.ln", "mix", "pctymle")
+crmrte_formula_all <- as.formula(paste("log(crmrte) ~", paste(ind_vars_all, collapse = "+"), sep = ""))
+crmrte_lm_all <- lm(crmrte_formula_all, data = crime)
+coeftest(crmrte_lm_all)
+summary(crmrte_lm_all)$adj.r.squared
 ```
 
 ```{r}
-AIC(crmrte_lm1)
+AIC(crmrte_lm0)
 AIC(crmrte_lm2)
-AIC(crmrte_lm2.ln)
+AIC(crmrte_lm_all)
 ```
-
 
 ```{r}
 par(mfrow=c(1,3))
-plot(crmrte_lm1, which = 1)
+plot(crmrte_lm0, which = 1)
 plot(crmrte_lm2, which = 1)
-plot(crmrte_lm2.ln, which = 1)
+plot(crmrte_lm_all, which = 1)
 ```
 
 ```{r}
 par(mfrow=c(1,3))
-plot(crmrte_lm1, which = 2)
+plot(crmrte_lm0, which = 2)
 plot(crmrte_lm2, which = 2)
-plot(crmrte_lm2.ln, which = 2)
+plot(crmrte_lm_all, which = 2)
 ```
 
 ```{r}
 par(mfrow=c(1,3))
-plot(crmrte_lm1, which = 3)
+plot(crmrte_lm0, which = 3)
 plot(crmrte_lm2, which = 3)
-plot(crmrte_lm2.ln, which = 3)
+plot(crmrte_lm_all, which = 3)
 ```
 
 ```{r}
 par(mfrow=c(1,3))
-plot(crmrte_lm1, which = 4)
+plot(crmrte_lm0, which = 4)
 plot(crmrte_lm2, which = 4)
-plot(crmrte_lm2.ln, which = 4)
+plot(crmrte_lm_all, which = 4)
 ```
 
 ```{r}
 par(mfrow=c(1,3))
-hist(crmrte_lm1$residuals, breaks = 15)
+hist(crmrte_lm0$residuals, breaks = 15)
 hist(crmrte_lm2$residuals, breaks = 15)
-hist(crmrte_lm2.ln$residuals, breaks = 15)
+hist(crmrte_lm_all$residuals, breaks = 15)
 ```
-
 ```{r}
-coeftest(crmrte_lm2.ln, vcov = vcovHC)
-```
-
-
-```{r}
-se.crmrte_lm1 <- sqrt(diag(vcovHC(crmrte_lm1)))
+se.crmrte_lm0 <- sqrt(diag(vcovHC(crmrte_lm0)))
 se.crmrte_lm2 <- sqrt(diag(vcovHC(crmrte_lm2)))
-se.crmrte_lm2.ln <- sqrt(diag(vcovHC(crmrte_lm2.ln)))
-stargazer(crmrte_lm1, crmrte_lm2,crmrte_lm2.ln,
+se.crmrte_lm_all <- sqrt(diag(vcovHC(crmrte_lm_all)))
+stargazer(crmrte_lm0, crmrte_lm2,crmrte_lm_all,
           type = "text", omit.stat = "f",
-          se = list(se.crmrte_lm1, se.crmrte_lm2, se.crmrte_lm2.ln),
+          se = list(se.crmrte_lm0, se.crmrte_lm2, se.crmrte_lm_all),
           star.cutoffs = c(0.05, 0.01, 0.001))
 ```
