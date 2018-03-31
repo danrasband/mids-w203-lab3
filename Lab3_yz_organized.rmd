@@ -321,6 +321,8 @@ coeftest(crmrte_lm1, vcov = vcovHC)
 
 **Note**: we will analyze the residuals later on, after we develop all three models.
 
+#### Model #2
+
 ```{r}
 ind_vars2 <- c("density", "west", "prbarr", "prbconv", "polpc_imp.ln", "pctmin80",
                "west*polpc_imp.ln")
