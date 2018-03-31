@@ -60,6 +60,12 @@ kable(crime_summary, booktabs = TRUE) %>%
 ```
 
 ```{r}
+crime$region <- ifelse(crime$west == 1, "west",
+                           ifelse(crime$central == 1, "central", "other"))
+aggregate(crmrte ~ region, data = crime, mean)
+```
+
+```{r}
 nrow(crime[crime$prbarr >= 1,])
 nrow(crime[crime$prbconv >= 1,])
 ```
@@ -93,10 +99,25 @@ summary(crime$wser_imp)
 ```
 
 ```{r}
+ggplot(crime, aes(polpc, crmrte)) +
+  geom_point() +
+  facet_grid(region~.) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+crime$polpc_imp <- 
+  ifelse(crime$polpc == max(crime$polpc), mean(crime[crime$west == 1,]$polpc), crime$polpc)
+summary(crime$polpc)
+summary(crime$polpc_imp)
+```
+
+
+```{r}
 # Prepare a .RData for easier sharing and usage.
 ind_variables <- c( 'crmrte',
   'prbarr_imp', 'prbconv_imp', 'prbpris', 'avgsen', 
-  'polpc', 'density', 'taxpc', 'west', 'central', 'urban', 'pctmin80', 'wcon', 
+  'polpc_imp', 'density', 'taxpc', 'west', 'central', 'urban', 'pctmin80', 'wcon', 
   'wtuc', 'wtrd', 'wfir', 'wser_imp', 'wmfg', 'wfed', 'wsta', 'wloc', 'mix', 
   'pctymle'
 )
@@ -152,11 +173,7 @@ hist(crime$crmrte, breaks = 15)
 hist(log(crime$crmrte), breaks = 15)
 ```
 
-```{r}
-crime$region <- ifelse(crime$west == 1, "west",
-                           ifelse(crime$central == 1, "central", "other"))
-aggregate(crmrte ~ region, data = crime, mean)
-```
+
 
 ```{r}
 cor_mat <- round(cor(crime[,ind_variables]),2)
@@ -188,7 +205,7 @@ ggplot(data = cor_mat_upper2, aes(Var1, Var2, fill = value)) +
 ind_vars_transf <- c("wcon", "wtuc", "wtrd", "wfir",
               "wser", "wser_imp", "wmfg", "wfed", "wsta", "wloc",
               "prbarr", "prbarr_imp", "prbconv", "prbconv_imp", "prbpris", "avgsen", 
-                "polpc", "density", "taxpc", "pctmin80", "mix", "pctymle")
+                "polpc_imp", "density", "taxpc", "pctmin80", "mix", "pctymle")
 crime[paste(ind_vars_transf,"ln",sep = ".")] <- log(crime[ind_vars_transf])
 crime[paste(ind_vars_transf,"sq",sep = ".")] <- (crime[ind_vars_transf])**2
 ```
@@ -203,7 +220,7 @@ summary(crmrte_lm0)$adj.r.squared
 
 
 ```{r}
-ind_vars1 <- c("density", "prbarr_imp", "prbconv", "taxpc.ln", "pctymle", "pctmin80")
+ind_vars1 <- c("density", "prbarr_imp", "prbconv", "polpc_imp.ln",  "pctmin80")
 crmrte_formula1 <- as.formula(paste("log(crmrte) ~", paste(ind_vars1, collapse = "+"), sep = ""))
 crmrte_lm1 <- lm(crmrte_formula1, data = crime)
 coeftest(crmrte_lm1)
@@ -211,8 +228,8 @@ summary(crmrte_lm1)$adj.r.squared
 ```
 
 ```{r}
-ind_vars2 <- c("density", "west","prbarr_imp", "prbconv", "polpc.ln", "wfed.ln", "pctmin80",
-               "west*polpc.ln")
+ind_vars2 <- c("density", "west","prbarr_imp", "prbconv", "polpc_imp.ln", "pctmin80",
+               "west*polpc_imp.ln")
 crmrte_formula2 <- as.formula(paste("log(crmrte) ~", paste(ind_vars2, collapse = "+"), sep = ""))
 crmrte_lm2 <- lm(crmrte_formula2, data = crime)
 coeftest(crmrte_lm2)
@@ -220,7 +237,7 @@ summary(crmrte_lm2)$adj.r.squared
 ```
 
 ```{r}
-ind_vars_all <- c("prbarr_imp", "prbconv", "prbpris", "avgsen", "polpc.ln", "density", "taxpc.ln",
+ind_vars_all <- c("prbarr_imp", "prbconv", "prbpris", "avgsen", "polpc_imp.ln", "density", "taxpc.ln",
                "west", "central", "urban", "pctmin80", "wcon.ln", "wtuc.ln", "wtrd.ln", "wfir.ln",
                "wser_imp.ln", "wmfg.ln", "wfed.ln", "wsta.ln", "wloc.ln", "mix", "pctymle")
 crmrte_formula_all <- as.formula(paste("log(crmrte) ~", paste(ind_vars_all, collapse = "+"), sep = ""))
@@ -258,9 +275,18 @@ plot(crmrte_lm_all, which = 3)
 
 ```{r}
 par(mfrow=c(1,3))
-plot(crmrte_lm0, which = 4)
-plot(crmrte_lm2, which = 4)
-plot(crmrte_lm_all, which = 4)
+plot(crmrte_lm0, which = 5)
+plot(crmrte_lm2, which = 5)
+plot(crmrte_lm_all, which = 5)
+```
+
+```{r}
+check_vars <- c("region","density","prbarr_imp", "prbconv", "polpc", "wfed", "pctmin80")
+crime[51, check_vars]
+```
+
+```{r}
+mapply(summary,crime[,check_vars])
 ```
 
 ```{r}
