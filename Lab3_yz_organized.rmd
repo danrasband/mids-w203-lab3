@@ -38,7 +38,7 @@ crime <- na.omit(crime)
 ```
 
 ```{r}
-crime$prbconv2 <- as.numeric(crime$prbconv)
+crime$prbconv <- as.numeric(crime$prbconv)
 crime$county <- NULL
 crime$year <- NULL
 ```
@@ -73,13 +73,13 @@ kable(crime_summary, booktabs = TRUE) %>%
 
 ```{r}
 nrow(crime[crime$prbarr >= 1,])
-nrow(crime[crime$prbconv2 >= 1,])
+nrow(crime[crime$prbconv >= 1,])
 ```
 
 ```{r}
 par(mfrow=c(1,2))
 plot(crime$prbarr, crime$crmrte)
-plot(crime$prbconv2, crime$crmrte)
+plot(crime$prbconv, crime$crmrte)
 ```
 
 ```{r}
@@ -89,9 +89,9 @@ summary(crime$prbarr_imp)
 ```
 
 ```{r}
-crime$prbconv2_imp <- ifelse(crime$prbconv2 > 1, 1, crime$prbconv2)
-summary(crime$prbconv2)
-summary(crime$prbconv2_imp)
+crime$prbconv_imp <- ifelse(crime$prbconv > 1, 1, crime$prbconv)
+summary(crime$prbconv)
+summary(crime$prbconv_imp)
 ```
 
 ```{r}
@@ -105,6 +105,8 @@ summary(crime$wser_imp)
 ```
 
 ```{r}
+crime$region <- ifelse(crime$west == 1, "west",
+                           ifelse(crime$central == 1, "central", "other"))
 ggplot(crime, aes(polpc, crmrte)) +
   geom_point() +
   facet_grid(region~.) +
@@ -129,7 +131,7 @@ summary(crime$polpc_imp)
 ```{r}
 # Prepare a .RData for easier sharing and usage.
 ind_variables <- c( 'crmrte',
-  'prbarr_imp', 'prbconv2_imp', 'prbpris', 'avgsen', 
+  'prbarr_imp', 'prbconv_imp', 'prbpris', 'avgsen', 
   'polpc_imp', 'density', 'taxpc', 'west', 'central', 'urban', 'pctmin80', 'wcon', 
   'wtuc', 'wtrd', 'wfir', 'wser_imp', 'wmfg', 'wfed', 'wsta', 'wloc', 'mix', 
   'pctymle'
@@ -212,7 +214,7 @@ ggplot(data = cor_mat_upper2, aes(Var1, Var2, fill = value)) +
 ```{r}
 ind_vars_transf <- c("wcon", "wtuc", "wtrd", "wfir",
               "wser", "wser_imp", "wmfg", "wfed", "wsta", "wloc",
-              "prbarr", "prbarr_imp", "prbconv2", "prbconv2_imp", "prbpris", "avgsen", 
+              "prbarr", "prbarr_imp", "prbconv", "prbconv_imp", "prbpris", "avgsen", 
                 "polpc_imp", "density", "taxpc", "pctmin80", "mix", "pctymle")
 crime[paste(ind_vars_transf,"ln",sep = ".")] <- log(crime[ind_vars_transf])
 crime[paste(ind_vars_transf,"sq",sep = ".")] <- (crime[ind_vars_transf])**2
@@ -284,10 +286,10 @@ aggregate(density ~ region, data = crime, mean)
 
 #### Model #1
 
-Our first model contains four variables: *density*, *west*, *prbarr*, *prbconv2*. The coefficients for these variables are:
+Our first model contains four variables: *density*, *west*, *prbarr*, *prbconv*. The coefficients for these variables are:
 
 ```{r}
-ind_vars1 <- c("density", "west", "prbarr", "prbconv2")
+ind_vars1 <- c("density", "west", "prbarr", "prbconv")
 crmrte_formula1 <- as.formula(paste("log(crmrte) ~", paste(ind_vars1, collapse = "+"), sep = ""))
 crmrte_lm1 <- lm(crmrte_formula1, data = crime)
 crmrte_lm1$coefficients
@@ -320,7 +322,7 @@ coeftest(crmrte_lm1, vcov = vcovHC)
 **Note**: we will analyze the residuals later on, after we develop all three models.
 
 ```{r}
-ind_vars2 <- c("density", "west", "prbarr", "prbconv2", "polpc_imp.ln", "pctmin80",
+ind_vars2 <- c("density", "west", "prbarr", "prbconv", "polpc_imp.ln", "pctmin80",
                "west*polpc_imp.ln")
 crmrte_formula2 <- as.formula(paste("log(crmrte) ~", paste(ind_vars2, collapse = "+"), sep = ""))
 crmrte_lm2 <- lm(crmrte_formula2, data = crime)
@@ -329,7 +331,7 @@ summary(crmrte_lm2)$adj.r.squared
 ```
 
 ```{r}
-ind_vars_all <- c("prbarr_imp", "prbconv2", "prbpris", "avgsen", "polpc_imp.ln", "density", "taxpc.ln",
+ind_vars_all <- c("prbarr_imp", "prbconv", "prbpris", "avgsen", "polpc_imp.ln", "density", "taxpc.ln",
                "west", "central", "urban", "pctmin80", "wcon.ln", "wtuc.ln", "wtrd.ln", "wfir.ln",
                "wser_imp.ln", "wmfg.ln", "wfed.ln", "wsta.ln", "wloc.ln", "mix", "pctymle")
 crmrte_formula_all <- as.formula(paste("log(crmrte) ~", paste(ind_vars_all, collapse = "+"), sep = ""))
