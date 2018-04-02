@@ -78,8 +78,20 @@ nrow(crime[crime$prbconv >= 1,])
 
 ```{r}
 par(mfrow=c(1,2))
-plot(crime$prbarr, crime$crmrte)
-plot(crime$prbconv, crime$crmrte)
+plot(crime$prbarr, crime$crmrte, 
+     cex.main = 0.8,
+     xlim = c(0,1.1),
+     col = "darkblue",
+     xlab = "Probability of Arrest",
+     ylab = "Crime Rate",
+     main = "Probability of Arrest vs. Crime Rate")
+plot(crime$prbconv, crime$crmrte, 
+     cex.main = 0.8,
+     xlim = c(0,2.1),
+     col = "darkgreen",
+     xlab = "Probability of Conviction",
+     ylab = "Crime Rate",
+     main = "Probability of Conviction vs. Crime Rate")
 ```
 
 ```{r}
@@ -95,6 +107,14 @@ summary(crime$prbconv_imp)
 ```
 
 ```{r}
+boxplot(crime$wser, 
+main = "Weekly wage for Service Industry", 
+ylab = 'Wage in $')
+```
+
+
+
+```{r}
 plot(crime$wser, crime$crmrte)
 ```
 
@@ -105,13 +125,41 @@ summary(crime$wser_imp)
 ```
 
 ```{r}
+crime$wkly_wage_tot_exwser <- crime$wcon + crime$wtuc + crime$wtrd + crime$wfir +  crime$wmfg + crime$wfed + crime$wsta + crime$wloc
+crime_wser_fix <- crime[crime$wser < 2000,]
+cor(crime[crime$wser < 2000,]$wser, crime_wser_fix$wkly_wage_tot_exwser)
+```
+
+```{r}
+wser_fix <- lm(wser ~ wkly_wage_tot_exwser, data = crime_wser_fix)
+wser_fix$coefficients
+summary(wser_fix)$r.square
+```
+
+```{r}
+crime[crime$wser > 2000,]$wkly_wage_tot_exwser
+(i = predict(wser_fix, data.frame(mix = c(0.1), wkly_wage_tot_exwser = c(2286.615))))
+crime$wser_imp <- ifelse(crime$wser > 2000, i, crime$wser)
+```
+
+
+```{r}
 crime$region <- ifelse(crime$west == 1, "west",
                            ifelse(crime$central == 1, "central", "other"))
 ggplot(crime, aes(polpc, crmrte)) +
   geom_point() +
   facet_grid(region~.) +
-  geom_smooth(method = "lm", se = FALSE)
+  geom_smooth(method = "lm", se = FALSE) +
+  xlab("Police per capita") +
+  ylab("Crime Rate") +
+  ggtitle("Police per Capita vs. Crime Rate by Region")
 ```
+
+```{r}
+plot(crime$taxpc, crime$polpc, main = "Demonstration of relationship between Tax per capita \n and Police per capita", xlab="Tax per capita, $", ylab="Police per capita", cex.main = 0.8)
+abline(lm(crime$taxpc ~ crime$polpc))
+```
+
 
 ```{r}
 ggplot(crime, aes(polpc, taxpc)) +
@@ -121,10 +169,32 @@ ggplot(crime, aes(polpc, taxpc)) +
 ```
 
 ```{r}
+crime_polpc_fix <- crime[crime$polpc < 0.008,]
+polpc_fix <- lm(log(polpc) ~ log(taxpc) + crmrte, data = crime_polpc_fix)
+polpc_fix$coefficients
+summary(polpc_fix)$r.square
+shapiro.test(polpc_fix$residuals)
+hist(polpc_fix$residuals, breaks = 20, main = "Residual histogram of the Police per capita predictor", xlab = "Residuals")
+bptest(polpc_fix)
+```
+
+```{r}
+pred_tax <- crime[crime$polpc > 0.008,]$taxpc
+pred_crm <- crime[crime$polpc > 0.008,]$crmrte
+i = predict(polpc_fix, data.frame(taxpc = c(log(pred_tax)), crmrte = c(pred_crm)))
+crime$polpc_imp2 <- ifelse(crime$polpc > 0.008, exp(i), crime$polpc)
+exp(i)
+```
+
+
+
+```{r}
 crime$polpc_imp <- 
-  ifelse(crime$polpc == max(crime$polpc), mean(crime[crime$west == 1,]$polpc), crime$polpc)
+  ifelse(crime$polpc == max(crime$polpc), mean(crime[crime$west == 1 & crime$polpc < 0.009,]$polpc), crime$polpc)
 summary(crime$polpc)
-summary(crime$polpc_imp)
+summary(crime[crime$west == 1,]$polpc)
+summary(crime[crime$west == 1,]$polpc_imp)
+summary(crime[crime$west == 1,]$polpc_imp2)
 ```
 
 
@@ -182,6 +252,50 @@ kable(desc, booktabs = TRUE, align = c("llccc")) %>%
   column_spec(5, width = "9em")
 ```
 
+```{r}
+var_labels <- c('crimes committed per person',
+'probability of arrest', 'probability of conviction',
+'probability of prison sentence', 'avg. sentence, days',
+'police per capita', 'people per sq. mile', 'tax revenue per capita',
+'=1 if in western N.C.', '=1 if in central N.C.', '=1 if in SMSA',
+'perc. minority, 1980', 'weekly wage, construction',
+'wkly wge, trns, util, commun', 'wkly wge, whlesle, retail trade',
+'wkly wge, fin, ins, real est', 'wkly wge, service industry',
+'wkly wge, manufacturing', 'wkly wge, fed employees',
+'wkly wge, state employees', 'wkly wge, local gov emps',
+'offense mix: face-to-face/other', 'percent young male'
+)
+impact <- c("Dependent",
+"Negative" , "Negative", "Negative", "Negative",
+"Negative", "Positive", "Negative",
+"Unclear", "Unclear", "Unclear", "Unclear",
+"Negative","Negative","Negative",
+"Negative", "Negative", "Negative", "Negative",
+"Negative", "Negative", "Unclear","Positive")
+control <- c("NA", "Medium Term", "Medium Term", "Short Term", "Short Term",
+"Medium Term", "Long Term", "Long Term",
+"No", "No", "No", "Long Term",
+"Medium Term", "Medium Term", "Medium Term",
+"Medium Term", "Medium Term", "Medium Term", "Medium Term",
+"Short Term", "Medium Term", "No", "Long Term")
+cor_w_crimerate <- round(cor(crime[,ind_variables])[1,],2)
+desc <- data.frame(ind_variables, var_labels, impact, cor_w_crimerate, control,
+row.names = NULL)
+colnames(desc) <- c("Explanatory Variables",
+"Explanation",
+"Expected Impact on Crime Rate",
+"Correlation w/ Crime Rate",
+"Policy Impact Timeframe")
+
+kable(desc, booktabs = TRUE, align = c("llccc")) %>%
+kable_styling(latex_options = c("scale_down"),
+full_width = FALSE) %>%
+row_spec(0, bold = TRUE) %>%
+column_spec(1, width = "8em") %>%
+column_spec(3, width = "10em") %>%
+column_spec(4, width = "8em") %>%
+column_spec(5, width = "9em")
+```
 
 
 
@@ -324,11 +438,22 @@ coeftest(crmrte_lm1, vcov = vcovHC)
 #### Model #2
 
 ```{r}
+# Correlation is strongest between the logs of both variables:
+c(
+  cor(crime$polpc_imp.ln, log(crime$crmrte)),
+  cor(crime$polpc, log(crime$crmrte)),
+  cor(crime$polpc, crime$crmrte)
+)
+```
+
+
+
+```{r}
 ind_vars2 <- c("density", "west", "prbarr", "prbconv", "polpc_imp.ln", "pctmin80",
                "west*polpc_imp.ln")
 crmrte_formula2 <- as.formula(paste("log(crmrte) ~", paste(ind_vars2, collapse = "+"), sep = ""))
 crmrte_lm2 <- lm(crmrte_formula2, data = crime)
-coeftest(crmrte_lm2, vcov = vcovHC)
+coeftest(crmrte_lm2, vcov = vcovHC, level = 0.05)
 summary(crmrte_lm2)$adj.r.squared
 ```
 
