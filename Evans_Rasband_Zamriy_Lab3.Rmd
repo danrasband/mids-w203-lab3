@@ -343,28 +343,40 @@ aggregate(density ~ region, data = crime, mean)
 
 ### Model #1
 
-Our first model contains four variables: `density`, `west`, `prbarr`, `prbconv`. The coefficients for these variables are calculated here:
+Our first model contains four variables: `density`, `west`, `prbarr`, `prbconv`. 
+However first, since the two probability variables are on the scale from 0 and 1 (except the outliers), we will multiply them both by 100 to change the scale to 0 to 100. This will allow the interpretation to be: the % change in crime rate per one point change in probability.
 
 ```{r}
-model1.ind_vars <- c('density', 'west', 'prbarr_imp', 'prbconv')
+crime$prbarr_imp100 <- 100*crime$prbarr_imp
+crime$prbconv100 <- 100*crime$prbconv
+```
+
+
+```{r}
+model1.ind_vars <- c('density', 'west', 'prbarr_imp100', 'prbconv100')
 model1.formula <- as.formula(paste('log(crmrte) ~',
                                    paste(model1.ind_vars, collapse = ' + '),
                                    sep = ' '))
 model1 <- lm(model1.formula, data = crime)
-coef1 <- data.frame(model1$coefficients)
-coef1$model1.coefficients <- round(coef1$model1.coefficients, 3)
-colnames(coef1) <- 'Model 1 Coefficients'
-coef1
+
+interpret1 <- c("","For each person per square mile increase in density, 
+                crime rate increases by 13.7% when everything else stays the same", 
+                "Crime rate in the West is 39.4% lower than in Central and Other 
+                regions on average (and controlling for all other included variables)",
+                "For each point increase in probability of arrest, 
+                crime rate decreases by 1.69%",
+                "For each point increase in probability of arrest, 
+                crime rate decreases by 0.69%")
+
+coef1 <- data.frame("Model 1 Coefficients" = round(model1$coefficients,4), 
+                    "Interpretation" = interpret1)
+
+kable(coef1, booktabs = TRUE) %>%
+  kable_styling(font_size = 8, full_width = FALSE) %>% 
+      column_spec(3, width = '35em')
 ```
 
-#### Model 1 Coefficient Interpretation
-
-- `density` (0.14): For each person per square mile increase in density, crime rate increases by 0.14% when everything else stays the same.
-- `west` (-0.39): Crime rate in the West is 0.39% lower than in Central and Other regions on average (and controlling for all other included variables).
-- `prbarr` (-1.69): For each point increase in probability of arrest, crime rate decreases by 1.69%.
-- `prbconv` (-0.69): For each point increase in probability of arrest, crime rate decreases by 0.69%
-
-Our model is consistent with our initial hypothesis: both probability variables have a negative impact on crime rate. Moreover, a one-point change in probability of arrest has a larger impact on crime rate than one-point change in probability of conviction. This confirms our hypothesis that probability of arrest has a stronger effect on crime rate because it's closer to the act of crime (being arrested is easier to relate to than being convicted).
+Our model is consistent with our initial hypothesis: both probability variables have a negative impact on crime rate. Moreover, a one-point change in probability of arrest has almost three times larger impact on crime rate than one-point change in probability of conviction. This confirms our hypothesis that probability of arrest has a stronger effect on crime rate because it's closer to the act of crime (being arrested is easier to relate to than being convicted).
 
 The adjusted $R^2$ for this model is 67.2%:
 
@@ -385,7 +397,7 @@ coeftest(model1, vcov = vcovHC, level = 0.05)
 We tested most of other variables in the dataset that potentially could be related to crime rate (using correlations). At the end we decided to add the following variables: `polpc`, `pctmin80`, and an interaction of `west` and `polpc`.
 Police per capita is not only highly correlated with crime rate, but it does seem to have direct link to crime. What we see from correlation analysis is counter intuitive at first glance: the higher police per capita, the higher crime rate. Logically, we would expect that increasing police presence would decrease crime rate over time. However, this dataset is panel data at one moment in time, not a time series. Hence, counties with higher police per capita require more police presence. Therefore, this variable is necessary for control purposes and it improves the fit of the model.
 
-Percent minorities also help with model fit. It is hard to hypothesize why correlation with crime rate is positive. Do poorer counties have larger minority populations? In this case, personal income would be a confounding variable that we don’t have. Or counties with more minorities have more gangs (on the ethnic basis)? This would also be a confounding variable. In any case, percent minorities will be used as representative of omitted factors.
+Percent minorities also helps with model fit. It is hard to hypothesize why correlation with crime rate is positive. Do poorer counties have larger minority populations? In this case, personal income would be a confounding variable that we don’t have. Or counties with more minorities have more gangs (on the ethnic basis)? This would also be a confounding variable. In any case, percent minorities will be used as representative of omitted factors.
 
 Before adding these variables, though, we decided to transform the `polpc` variable by taking its log. We perform this transformation for two reasons: there is a stronger correlation between the log of police per capita and the log of the crime rate variable than that of the raw values or of the log of the crime rate and the raw police per capita. This tells us that there is a better correlation between percent changes in the two variables than the raw changes. Performing this transformation also improves the quality of our regression model. The transformation is performed here:
 
@@ -414,47 +426,69 @@ kable(crmrte.polpc.cor, col.names = c('Variables', 'Correlation'),
 We also combine `west` and the transformed `polpc` (`polpc_imp.ln`) by multiplying them. Why do we add this interaction? Because the police per capita in the West region has much lower correlation with crime rate than police per capita in the other regions, as is shown here:
 
 ```{r}
-cat('Correlation in the West:',
-    cor(log(crime[crime$region=='west',]$crmrte),
-        crime[crime$region=='west',]$polpc_imp.ln), "\n")
-cat('Correlation in the Central:',
-    cor(log(crime[crime$region=='central',]$crmrte),
-        crime[crime$region=='central',]$polpc_imp.ln), "\n")
-cat('Correlation in the Other:',
-    cor(log(crime[crime$region=='other',]$crmrte),
-        crime[crime$region=='other',]$polpc_imp.ln), "\n")
+region <- c('West',
+            'Central',
+            'Other')
+
+region_cor <- c(
+  round(cor(log(crime[crime$region=='west',]$crmrte),crime[crime$region=='west',]$polpc_imp.ln),2),
+  round(cor(log(crime[crime$region=='central',]$crmrte),crime[crime$region=='central',]$polpc_imp.ln),2),
+  round(cor(log(crime[crime$region=='other',]$crmrte),crime[crime$region=='other',]$polpc_imp.ln),2)    
+)
+cor.by.region <- data.frame(region, region_cor)
+kable(cor.by.region, col.names = c('Region', 'Correlation'),
+      booktabs = TRUE)
 ```
 
 Now, to the actual model:
 
 ```{r}
-model2.ind_vars <- c('density', 'west', 'prbarr_imp', 'prbconv',
+model2.ind_vars <- c('density', 'west', 'prbarr_imp100', 'prbconv100',
                      'polpc_imp.ln', 'pctmin80', 'west*polpc_imp.ln')
 model2.formula <- as.formula(paste('log(crmrte) ~ ',
                                    paste(model2.ind_vars, collapse = ' + '),
                                    sep = ''))
 model2 <- lm(model2.formula, data = crime)
-coef2 <- data.frame(model2$coefficients)
-coef2$model2.coefficients <- round(coef2$model2.coefficients, 3)
-colnames(coef2) <- 'Model 2 Coefficients'
-coef2
+
+interpret2 <- c("","(Before: 0.14): The effect of density has decreased as we are controling for
+                more factors. For each person per square mile increase in density, 
+                crime rate increases by 9.9%",
+                "(Before: -0.39): This coefficient cannot be interpreted by itself 
+                as it is now part of interaction with police per capita. 
+                See explanation below",
+                "(Before: -0.0169): The probability of arrest has a  
+                stronger effect. 
+                A single point of increase in the probability of arrest results 
+                in a 2.02% decrease in the crime rate",
+                "(Before: -0.0069): The effect of the probability of conviction 
+                has also increased slightly. For each point increase in the probability of 
+                arrest, crime rate decreases by 0.74%",
+                "This coefficient indicates that a 1% increase in police per capita is associated 
+                with a 0.63% increase in crime rate in all regions but West",
+                "This coefficient indicates that 1 percent point increase in the minority 
+                population means a 0.99% increase in crime per capita",
+                "See explanation below")
+
+coef2 <- data.frame("Model 2 Coefficients" = round(model2$coefficients,4), 
+                    "Interpretation" = interpret2)
+
+kable(coef2, booktabs = TRUE) %>%
+  kable_styling(font_size = 8, full_width = FALSE) %>% 
+      column_spec(3, width = '35em')  
 ```
 
-#### Model 2 Coefficient Interpretation
+The interaction term is harder to interpret. It applies only to the West region. That means that $polpc\_imp.ln$ coefficient of 0.636 applies only to Central and Other regions. In the West the coefficient for $polpc\_imp.ln$ is actually 0.0064 (0.6360 - 0.6296) or per each percent change in police per capita in the West, there is only 0.64% change in crime rate. This value is close to zero and implies no significant relationship between two variables in that region. This is supported by correlations we examined earlier in this section. 
+As for the $west$ coefficient, it also cannot be interpreted in isolation because setting $polpc\_imp.ln$ to zero does not make practical sense. If on the other hand, we use mean $polpc\_imp.ln$ value for the West region then the partial effect for $west$ is:
 
-Some changes can be seen with the the introduction of police per capita, percent minority in 1980, and police per capita in the West region variables:
+```{r}
+mean_polpc <- mean(crime[crime$region=='west',]$polpc_imp.ln)
+coef_west_polpc <- model2$coefficients['west:polpc_imp.ln']
+coef_west <- model2$coefficients['west']
+coef_west + coef_west_polpc*mean_polpc
+```
 
-- `density` (Before: 0.14, After: 0.09): The effect of density has decreased slightly. For each person per square mile increase in density, crime rate increases by 0.09%.
-- `west` (Before: -0.39, After: -4.34): The effect of a county being in the West region has become much stronger, likely due to controlling for the effect of police per capita in the West. Crime rate is 4.34% lower in the West than in the rest of the state.
-- `prbarr_imp` (Before: -1.69, After: -2.02): The probability of arrest has a slightly stronger effect. A single point of increase in the probability of arrest results in a 2.02% decrease in the crime rate.
-- `prbconv_imp` (Before: -0.69, After: -0.74): The effect of the probability of conviction has also increased slightly. For each point increase in the probability of arrest, crime rate decreases by 0.74%.
-- `polpc_imp.ln` (0.63): This coefficient indicates that a 1% increase in police per capita results in a 0.63% increase in crime rate.
-- `pctmin80` (0.01): This coefficient indicates that a 1% increase in the minority population means a 0.01% increase in crime per capita.
-- `west*polpc_imp.ln` (-0.63): A 1% decrease in police per capita in the West region results in a 0.63% decrease in crime rate for those counties.
 
-This second model remains consistent with our initial hypothesis, and actually improves the strength of both probability variables slightly. The overall predictive strength of the model has also increased.
-
-The adjusted $R^2$ for this model is 80.1%, which is 12.9% higher than our first model:
+This second model remains consistent with our initial hypothesis, and actually improves the strength of both probability variables slightly. The overall predictive strength of the model has also increased. The adjusted $R^2$ for this model is 80.1%, which is 12.9 percent points higher than our first model:
 
 ```{r}
 summary(model2)$adj.r.squared
@@ -468,7 +502,7 @@ coeftest(model2, vcov = vcovHC, level = 0.05)
 
 ### Model #3 - All Variables
 
-Finally, our last model includes all variables, including our imputed variables. We transform all wage variables to match the logarithmic transformation of the crime rate.
+Finally, our last model includes all variables, including our imputed variables. We transform all wage variables by taking their natural log. This will allow us to interpret the coefficients as elasticities instead of using absolute wage changes.
 
 ```{r}
 wage.vars <- c('wcon', 'wtuc', 'wtrd', 'wfir', 'wser_imp', 'wmfg', 'wfed',
@@ -481,7 +515,7 @@ crime[, wage.vars.ln] <- log(crime[, wage.vars])
 And then we create our third model, which includes all of variables, transformed as needed:
 
 ```{r}
-model3.ind_vars <- c('prbarr_imp', 'prbconv', 'prbpris', 'avgsen',
+model3.ind_vars <- c('prbarr_imp100', 'prbconv100', 'prbpris', 'avgsen',
                      'polpc_imp.ln', 'density', 'taxpc', 'west', 'central',
                      'urban', 'pctmin80', 'wcon.ln', 'wtuc.ln', 'wtrd.ln',
                      'wfir.ln', 'wser_imp.ln', 'wmfg.ln', 'wfed.ln', 'wsta.ln',
@@ -490,21 +524,12 @@ model3.formula <- as.formula(paste('log(crmrte) ~ ',
                                    paste(model3.ind_vars, collapse = ' + '),
                                    sep = ''))
 model3 <- lm(model3.formula, data = crime)
-coef3 <- data.frame(model3$coefficients)
-coef3$model3.coefficients <- round(coef3$model3.coefficients, 3)
-colnames(coef3) <- 'Model 3 Coefficients'
-coef3
-```
-
-Despite adding a lot more variables, the $R^2$ of the all-inclusive regression model went up only to 82.6% (from 79.5% in model 2):
-
-```{r}
 summary(model3)$adj.r.squared
 ```
 
-That means that additional variables did not contribute to the model fit.
+Despite adding a lot more variables, the $R^2$ of the all-inclusive regression model went up only to 82.3% (from 80.1% in model 2). That means that additional variables did not contribute to the model fit.
 
-Now let's compare all three models:
+Now let's compare the coefficients in this model to the other two models:
 
 ```{r, warning=FALSE}
 se.model1 <- sqrt(diag(vcovHC(model1)))
@@ -520,33 +545,48 @@ stargazer(model1, model2, model3,
 ```
 
 
-(work in progress - will need to look harder at the impact on the coefficients for the independent variables we have selected)
+**This table demonstrates that:**
+
+ - Our main variables of interest $prbarr$ and $prbconv$ have robust estimates in all models. Moreover, $prbarr$ coefficient is consistently higher than for $prbconv$. Hence, it is more likely to cause crime rate to change. 
+ - The coefficient for $density$ also remains robust and doesn't change between model 2 and 3 significantly
+ - $poppc$ remains a strong variable even without interaction in model #3. However, its interaction with $west$ helps model #2 significantly.
+ - $pctmin80$ is also robust as its coefficient stays statistically significant in model #3
+ - All other variables are not statistically significant in model #3. The only exception is $central$. However, when we tested this variable in model #2 it didn't maintain its significance. Hence, it is highly sensitive to model definition
+
 
 ### Residual Analysis
 
 ```{r}
 par(mfrow=c(1,2))
-plot(model1, which = 1, caption = 'Model 1:\nResiduals vs. Fitted')
-plot(model2, which = 1, caption = 'Model 2:\nResiduals vs. Fitted')
+plot(model1, which = 1, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
+     caption = 'Model 1:\nResiduals vs. Fitted')
+plot(model2, which = 1, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
+     caption = 'Model 2:\nResiduals vs. Fitted')
 ```
 
 ```{r}
 par(mfrow=c(1,2))
-plot(model1, which = 2, main = 'Model 1:\nNormal Q-Q', caption = '')
-plot(model2, which = 2, main = 'Model 2:\nNormal Q-Q', caption = '')
+plot(model1, which = 2, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
+     main = 'Model 1:\nNormal Q-Q', caption = '')
+plot(model2, which = 2, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
+     main = 'Model 2:\nNormal Q-Q', caption = '')
 ```
 
 ```{r}
 par(mfrow=c(1,2))
-plot(model1, which = 3, main = 'Model 1:\nScale-Location', caption = '')
-plot(model2, which = 3, main = 'Model 2:\nScale-Location', caption = '')
+plot(model1, which = 3, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
+     main = 'Model 1:\nScale-Location', caption = '')
+plot(model2, which = 3, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
+     main = 'Model 2:\nScale-Location', caption = '')
 ```
 
 ```{r}
 par(mfrow=c(1,2))
-plot(model1, which = 5, main = 'Model 1:\nResiduals vs. Leverage',
+plot(model1, which = 5, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
+     main = 'Model 1:\nResiduals vs. Leverage',
      caption = '')
-plot(model2, which = 5, main = 'Model 2:\nResiduals vs. Leverage',
+plot(model2, which = 5, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
+     main = 'Model 2:\nResiduals vs. Leverage',
      caption = '')
 ```
 
