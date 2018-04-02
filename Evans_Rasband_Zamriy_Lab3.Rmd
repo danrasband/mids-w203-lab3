@@ -630,9 +630,9 @@ The stigma of some crimes for victims within a community, the feeling that nothi
 
 ### Recidivism
 
-There have been several studies that suggest that someone who has committed a crime in the past is more likely to commit crimes in the $future^1$. The proportion of people with prior convictions in a county could be an additional driver that would impact crime rates. It is unclear where this may bias, but is unlikely to be in the most affluent areas with the higher wages and taxes per capita. Were that to be the case, the absence of a population with prior convictions in wealthy areas may artificially lower coefficients for tax per capita or the weekly wages vs crime rate.
+There have been several studies that suggest that someone who has committed a crime in the past is more likely to commit crimes in the future[^1]. The proportion of people with prior convictions in a county could be an additional driver that would impact crime rates. It is unclear where this may bias, but is unlikely to be in the most affluent areas with the higher wages and taxes per capita. Were that to be the case, the absence of a population with prior convictions in wealthy areas may artificially lower coefficients for tax per capita or the weekly wages vs crime rate.
 
-$^1$The Offending, Crime and Justice Survey (2003); RECIDIVISM AMONG FEDERAL OFFENDERS: A COMPREHENSIVE OVERVIEW
+[^1]: The Offending, Crime and Justice Survey (2003); RECIDIVISM AMONG FEDERAL OFFENDERS: A COMPREHENSIVE OVERVIEW
 
 ### Unemployment levels
 
