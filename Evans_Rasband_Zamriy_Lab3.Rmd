@@ -33,12 +33,9 @@ suppressMessages(library(stargazer))
 
 # An analysis of Crime in North Carolina to support Policy Decisions
 
-## Abstract…
-TBA
-
 ## Introduction
 
-Crime is expected to be a significant issue during the upcoming election in North Carolina.  Using statistical techniques, this report intends to provide data driven insights into the determinants of crime in the state.  A mixture of both long- and short-term policy suggestions will be included to address the factors that exacerbate crime, and to capitalize on those factors that may inhibit it.
+Crime is expected to be a significant issue during the upcoming election in North Carolina.  Using statistical techniques, this report intends to provide data driven insights into the determinants of crime in the state.  A mixture of both long- and short-term policy suggestions will be included to address the factors that exacerbate crime, and to capitalize on those factors that that act as suppressors.
 
 ## Exploratory Data Analysis
 
@@ -58,18 +55,18 @@ dim(crime)
 
 There are a total of 91 observations in the dataset; 6 rows are completely devoid of data and can be excluded.  It should be noted that there are 100 counties in North Carolina; therefore this dataset contains data for 91% of them.  It is not possible to tell if the excluded counties are randomly excluded or share specific features that may bias this data set.
 
-Counties range in population numbers from 15,000 people to over 1 million.  The data provided has many ratios and averages, but without the actual numbers relating to those numbers, it can be hard to draw practical significance from conclusions as each county will be considered equal to any other.  As electoral representation in general does not follow population density, there may be advantages to analyzing data at a county level only, but it should be considered depending on the inference that is being generated.
+Counties range in population numbers from 15,000 people to over 1 million.  The data provided has many abstracted values such as ratios and averages, but without the actual numbers relating to those abstractions, it can be hard to draw practical significance from conclusions as each county will be considered equal to any other.  As electoral representation in general does not follow population density, there may be advantages to analyzing data at a county level only, but this limitation should be considered depending on the inference that is being generated.
 
 ```{r}
 crime <- na.omit(crime)
 ```
-From the summary, the probability of conviction dimension, prbconv, is of a data format which is not consistent with analysis in R.  This can be corrected, and the result stored in a new column 
+From the summary, the probability of conviction dimension, prbconv, is of a data format which is not consistent with analysis in R.  This can be corrected, and the variable replaced by the corrected data 
 
 ```{r}
 crime$prbconv <- as.numeric(as.character(crime$prbconv))
 ```
 
-The variables are made up of ratios, specifically the probability of arrest, conviction and prison sentence, the percent minority, young male, police and tax revenue per capita, and the ratio (mix) of face to face crimes to other types.  The mean of several variables are provided for each county: a series of weekly wages in different business segments, and prison sentences in days.  Finally, an indicator of the location of the county in the state is also provided indicating west, central, where other can be identified by difference.  The `urban` variable also indicates whether the county is a “Standard Metropolitan Statistical Area.”  Below is a summary of variables including some summary statistics:
+The variables are made up of ratios, specifically the probability of arrest, conviction and prison sentence, the percent minority, young male, police and tax revenue per capita, and the ratio (mix) of face to face crimes to other types.  The mean of several variables are provided for each county: a series of weekly wages in different business segments, and prison sentences in days.  Finally, an indicator of the location of the county in the state is also provided indicating west and central. Other can be identified by difference.  The `urban` variable also indicates whether the county is a “Standard Metropolitan Statistical Area.”  Below is a summary of variables including some summary statistics:
 
 ```{r}
 crime_summary <- data.frame(t(mapply(summary, crime)))
@@ -95,11 +92,11 @@ boxplot(crime$prbconv,
         main = "Probability of Conviction")
 ```
 
-In case of probability of arrests, there is only one observation where the value is above 1, and it is significantly higher than the next closest value. Is it possible that there are more arrests than offences in one county? As this is time-limited data covering a single year, it is possible that crimes committed in the previous year and not recorded as a 1987 crime actually generated an arrest in 1987. Similarly, convictions may also have occurred in 1987, with the arrest relating to that conviction occurring in a prior period.
+In case of probability of arrests, there is only one observation where the value is above 1, and it is significantly higher than the next closest value. It indicates that there have been more arrests than there have been crimes in a county.  As this is time-limited data covering a single year, it is possible that crimes committed in the previous year and not recorded as a 1987 crime actually generated an arrest in 1987. Similarly, convictions may also have occurred in 1987, with the arrest relating to that conviction occurring in a prior period.  It is not unfeasible that convictions for prior period arrests occur as the waiting time between being charged with an offense and a court date can be lengthy.  Higher rates are an indication that a county is moving faster through its backlog.
 
-Additionally, the table identifies some unusual features in some of the variables, including some significant outliers.  Some of these outliers clearly appear to be inconsistent with the data and will be mentioned and corrected here; others may be more subtle and will be discussed as they are considered in models.
+Additionally, the table identifies some unusual features in some of the variables, including some significant outliers.  Some of these outliers clearly appear to be inconsistent with the data and will be mentioned and corrected here; others may be more subtle and will be discussed as they are considered in models.  Service industry wages and police per capita will be addressed in this section.
 
-In the series of variables noting the weekly wages in a county, there is an exceptional value in the in one of the counties, as seen in the below boxplot.
+In the series of variables noting the weekly wages in a county, there is an exceptional value in the in one of the counties average wage, as seen in the below box-plot.
 
 ```{r}
 boxplot(crime$wser,
@@ -116,7 +113,7 @@ This one value is not only over over 9 standard deviations from the mean (as see
 
 The observation will need to be maintained, and therefore only the service weekly wage value will be replaced by an imputed value.
 
-After developing a predictive model using the total of average weekly wages, with which the wages of the service sector is strongly correlated, the value of \$211 per week is not dissimilar from the mean of \$254 per week and therefore use of the mean as imputed value appears reasonable. A new field is populated so that we do not lose the original values. 
+The result of a predictive model using the total of average weekly wages, with which the wages of the service sector are strongly correlated, is \$211 per week.  This is not dissimilar from the mean of \$254 per week and therefore use of the mean as imputed value appears reasonable and simple. A new field is populated so that we do not lose the original values. 
 
 ```{r}
 crime$wser_imp <- ifelse(crime$wser > 2000, mean(crime[crime$wser < 2000,]$wser), crime$wser)
@@ -138,8 +135,8 @@ geom_smooth(method = "lm", se = FALSE) +
 
 ```
 
-It is clear that the impact of this observation is significant to the trend of police per capita on crime rate. Additionally, according to governing.com, police per population in Washington DC (where we would expect the highest concentration of police force) is 0.0065, significantly lower than our outlier point. 
-Based on this analysis, we decided to recode the outlier with the mean of $polpc$ in the West region:
+It is clear that the impact of this observation is significant to the trend of police per capita on crime rate. And, while perhaps possible, it is not representative of the rest of the population.  Additionally, according to governing.com, police per population in Washington DC (where the highest concentration of police force might be expected) is 0.0065, significantly lower than this outlier.
+Based on this analysis, the outlier will be recoded with the mean of $polpc$ in the West region:
 
 ```{r}
 crime$polpc_imp <- 
@@ -148,7 +145,7 @@ summary(crime$polpc)
 summary(crime$polpc_imp)
 ```
 
-However, with more in-depth analysis we discovered that the outlier for $polpc$ belongs to the same observation as the outlier for $prbarr$. 
+Furthermore, this outlier in police per capita occurs in the same observation as the upper outlier in probability of arrest. 
 
 ```{r}
 ggplot(crime, aes(polpc, prbarr)) +
@@ -160,14 +157,14 @@ ggplot(crime, aes(polpc, prbarr)) +
   ggtitle("Demonstration of relationship between Police per capita \n and Probability of Arrest")
 ```
 
-Moreover, the correlation between two variables changes from positive to negative if we exclude the observation with the outlier:
+The unrepresentativeness of these outliers can be demonstrated when correlation between two variables is compared.  The correlation changes from positive to negative if the observation with the outlier is excluded:
 
 ```{r}
 cat("Correlation with the outlier inlcuded:", cor(crime$polpc, crime$prbarr), "\n")
 cat("Correlation with the outlier excluded:", cor(crime[-51,]$polpc, crime[-51,]$prbarr), "\n")
 ```
 
-Hence, we decided that should create new variable for $prbarr$ as well and impute mean for the probability of arrests instead of the original value of above one:
+Therefore, a new variable has been created for the probability of arrest with the mean of the variable in the west becoming the imputed value for the outlier:
 
 ```{r}
 crime$prbarr_imp <- 
@@ -180,7 +177,7 @@ Though other variables appear to have exceptional values or outliers (particular
 
 ### Correlations
 
-To conclude our initial data exploration, we have developed an easy-to-reference correlation heatmap for quick identification of positive or negative correlations between variables in the data set.
+To conclude our initial data exploration, an easy-to-reference correlation heatmap has been developedn for quick identification of positive or negative correlations between variables in the data set.
 
 ```{r}
 ind_variables <- c( 'crmrte',
@@ -216,7 +213,7 @@ ggplot(data = cor_mat_upper2, aes(Var1, Var2, fill = value)) +
 
 ### Summary of variables
 
-The table below summarizes all variables in the dataset, and includes the expected impact of each on the dependent variable, crime rate, along with the actual correlation.  Also included, as a framework for the analysis, is an assessment of the rapidity at which policy could be enacted and be effective.  The support and lobbying for judges with perspectives that would support policies relating to custodial terms and the length of those could be implemented quickly.  However developing incentives and strategies to reduce population density will take a longer time to generate results 
+The table below summarizes all variables in the dataset, and includes the expected impact of each on the dependent variable, crime rate, along with the actual correlation.  Also included, as a framework for the analysis, is an assessment of the rapidity at which policy could be enacted and be effective.  The support and lobbying for judges with perspectives that would support policies relating to custodial terms and their length, could be implemented quickly.  However developing incentives and strategies to reduce population density will take a longer time to generate results. 
 
 ```{r}
 var_labels <- c('crimes committed per person',
@@ -342,7 +339,7 @@ aggregate(density ~ region, data = crime, mean)
 
 ### Model #1
 
-Our first model contains four variables: $density$, $west$, $prbarr$, $prbconv2$. The coefficients for these variables are calculated here:
+Our first model contains four variables: $density$, $west$, $prbarr$, $prbconv$. The coefficients for these variables are calculated here:
 
 ```{r}
 model1.ind_vars <- c("density", "west", "prbarr_imp", "prbconv")
@@ -355,10 +352,10 @@ coef1
 ```
 #### Model 1 Coefficient Interpretation
 
-- $density$ 0.15: for each person per square mile increase in density, crime rate increases by 0.15% when everything else stays the same.
-- $west$ -0.36: crime rate in the West is 0.36% lower than in Central and Other regions on average (and controlling for all other included variables).
-- $prbarr$ -1.27: for each point increase in probability of arrest, crime rate decreases by 1.27%.
-- $prbconv$ -0.55: for each point increase in probability of arrest crime rate decreases by 0.55%
+- $density$ 0.14: for each person per square mile increase in density, crime rate increases by 0.14% when everything else stays the same.
+- $west$ -0.39: crime rate in the West is 0.39% lower than in Central and Other regions on average (and controlling for all other included variables).
+- $prbarr$ -1.69: for each point increase in probability of arrest, crime rate decreases by 1.69%.
+- $prbconv$ -0.69: for each point increase in probability of arrest, crime rate decreases by 0.69%
 
 Our model is consistent with our initial hypothesis: both probability variables have a negative impact on crime rate. Moreover, a one-point change in probability of arrest has a larger impact on crime rate than one-point change in probability of conviction. This confirms our hypothesis that probability of arrest has a stronger effect on crime rate because it's closer to the act of crime (being arrested is easier to relate to than being convicted).
 
@@ -545,28 +542,32 @@ hist(model2$residuals,
 
 ### Drug and alcohol abuse levels
 
-The presence of drug and alcohol problems in a community is a significant contributing factor to crime rates in many areas.  There is an expectation that less affluent communities in urban areas would be most impacted, which may explain some of the higher rates of crime in higher density populated counties and bias the coefficients of density and the Urban areas in models.  These coefficients may have factors related to drug and alcohol abuse included in them    
+The presence of drug and alcohol problems in a community is a significant contributing factor to crime rates in many areas.  There is an expectation that less affluent communities in urban areas would be most impacted, which may explain some of the higher rates of crime in higher density populated counties and bias the coefficients of density and the urban areas in our model.  These coefficients may have factors related to drug and alcohol abuse included in them.
+
+### Unreported crime
+
+The stigma of some crimes for victims within a community, the feeling that nothing will be done to catch the perpetrators or perhaps vigilante justice may lead to crimes in some areas being under reported.  Sexual assaults specifically can be difficult for victims to report for fear of community isolation or reprisals in smaller communities. The presence of gangs, undocumented immigrants or local judicial services being overwhelmed and unavailable may be a cause in some more urban areas.  The presence of unreported crimes will impact the probability of arrest as the total number of crimes that have occured is understated 
 
 ### Recidivism 
 
-There have been several studies that suggest that someone who has committed a crime in the past is more likely to commit crimes in the $future^1$.  The proportion of people with prior convictions in a county could be an additional driver that would impact crime rates.  It is unclear where this may bias, but may be unlikely to be in the most affluent areas with the higher wages and taxes per capita.    
+There have been several studies that suggest that someone who has committed a crime in the past is more likely to commit crimes in the $future^1$.  The proportion of people with prior convictions in a county could be an additional driver that would impact crime rates.  It is unclear where this may bias, but is unlikely to be in the most affluent areas with the higher wages and taxes per capita. Were that to be the case, the absence of a population with prior convictions in wealthy areas may artificially lower coefficients for tax per capita or the weekly wages vs crime rate. 
 
 $^1$The Offending, Crime and Justice Survey (2003); RECIDIVISM AMONG FEDERAL OFFENDERS: A COMPREHENSIVE OVERVIEW
 
 ### Unemployment levels
 
-Unemployment is likely to have an impact on crime rates.  Unemployment may be higher in the young and minorities, and therefore some of the coefficients relating to those variables may be overstated.
+The employment levels in a county is likely to have an impact on crime rates.  Unemployment is usually higher in the young and minorities.  The higher positive coefficients of young male and minority variable in our models will include some amount of biased from the impact of unemployment which will prove a problem to the model.  Conversely, unemployment will lower the tax per capita of a county which will artificually lower the coefficient of tax per capita as an exasibator of crime  
 
 ### Education levels
 
-The level of education in a county could be an indicator of some crimes.  There may be covariance between lower levels of education and lower wages  
+The level of education in a county could be an indicator of some crimes.  There may be covariance between lower levels of education and lower wages, along with unemployment.  Rural areas, with less density, and some inner city areas may have populations that are less well educated resulting in a complex impact accross the state which will be hard to predict without data
 
 ### Strength of community
 
-Strong community ties, generally in rural areas, can have a suppressing effect on crime.  
+Strong community ties, generally in rural areas, can have a suppressing effect on crime.  This is a counter-weight to education levels and unemployment, both of which may be higher in such communities. This is not necessarily in all areas of low population as there are areas, on the outer banks, where many second homes are located and which can be victim to burglury and theft.  The strength of community can also cause crimes to be unreported and dealt with through informal means. This is another complex factor, but would be expected to explain part of the coefficient for density meaning density would be biased and negativly impacting models 
 
-### Gang presence
+### Income inequality
 
-### Unreported crime
+Local inequality of wealth can be a driver of crime. Regardless of average wages, and if wages are generally high, if there are disparities in the distribution amongst the population, crimes will tend to increase. This is likely to impact higher density areas, as the population is greater and the the probability of disparities exist.  Therefore, this is another factor that would detrimentally impact the density coefficient in models 
 
-The stigma of some crimes for victims within a community, the feeling that nothing will be done to catch the perpetrators or perhaps vigilante justice may lead to crimes in some areas being under reported.  Sexual assaults specifically can be difficult for victims to report for fear of community isolation or reprisals in smaller communities. The presence of gangs, undocumented immigrants or local judicial services being overwhelmed and unavailable may be a cause in some more urban areas.  The presence of unreported crimes will impact the probability of arrest as the total number of crimes that have occured is understated 
+
