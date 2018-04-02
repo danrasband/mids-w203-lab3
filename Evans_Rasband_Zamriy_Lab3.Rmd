@@ -1,25 +1,25 @@
 ---
-title: 'Lab 3: Reducing Crime (DRAFT)'
-subtitle: 'W203 Statistics'
-author: 'Luke Evans, Daniel Rasband, and Yulia Zamriy'
+title: "Lab 3: Reducing Crime (DRAFT)"
+subtitle: "W203 Statistics"
+author: "Luke Evans, Daniel Rasband, and Yulia Zamriy"
 date: \today
 output: pdf_document
 ---
 
 ```{r setup, include=FALSE, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-options(knitr.table.format = 'latex')
+options(knitr.table.format = "latex")
 ```
 
 ```{r, echo=FALSE}
-# install.packages('viridisLite')
-# install.packages('viridis')
-# install.packages('Hmisc')
-# install.packages('kableExtra')
-# install.packages('car')
-# install.packages('lmtest')
-# install.packages('sandwich')
-# install.packages('stargazer')
+# install.packages("viridisLite")
+# install.packages("viridis")
+# install.packages("Hmisc")
+# install.packages("kableExtra")
+# install.packages("car")
+# install.packages("lmtest")
+# install.packages("sandwich")
+# install.packages("stargazer")
 suppressMessages(library(knitr))
 suppressMessages(library(kableExtra))
 suppressMessages(library(Hmisc))
@@ -48,7 +48,7 @@ While averages and rates are presented for many variables, the absolute numbers,
 Our initial exploration of the data has revealed several notable features. The information below provides the dimensions of the raw data: 25 variables and 97 rows.
 
 ```{r}
-crime <- read.csv('crime_v2.csv', stringsAsFactors = FALSE)
+crime <- read.csv("crime_v2.csv", stringsAsFactors = FALSE)
 dim(crime)
 ```
 
@@ -70,7 +70,7 @@ The variables are made up of ratios, specifically the probability of arrest, con
 
 ```{r}
 crime_summary <- data.frame(t(mapply(summary, crime)))
-crime_summary <- crime_summary[,c('Min.', 'Mean', 'Max.')]
+crime_summary <- crime_summary[,c("Min.", "Mean", "Max.")]
 crime_summary$Min. <- round(crime_summary$Min.,5)
 crime_summary$Mean <- round(crime_summary$Mean,4)
 crime_summary$Max. <- round(crime_summary$Max.,4)
@@ -83,13 +83,13 @@ From the above table it can be seen that in several counties, the probability of
 ```{r}
 par(mfrow=c(1,2))
 boxplot(crime$prbarr,
-        col = 'darkgreen',
+        col = "darkgreen",
         cex.main = 0.8,
-        main = 'Probability of Arrest')
+        main = "Probability of Arrest")
 boxplot(crime$prbconv,
-        col = 'darkblue',
+        col = "darkblue",
         cex.main = 0.8,
-        main = 'Probability of Conviction')
+        main = "Probability of Conviction")
 ```
 
 In case of probability of arrests, there is only one observation where the value is above 1, and it is significantly higher than the next closest value. It indicates that there have been more arrests than there have been crimes in a county. As this is time-limited data covering a single year, it is possible that crimes committed in the previous year and not recorded as a 1987 crime actually generated an arrest in 1987. Similarly, convictions may also have occurred in 1987, with the arrest relating to that conviction occurring in a prior period. It is not unfeasible that convictions for prior period arrests occur as the waiting time between being charged with an offense and a court date can be lengthy. Higher rates are an indication that a county is moving faster through its backlog.
@@ -101,8 +101,8 @@ In the series of variables noting the weekly wages in a county, there is an exce
 ```{r}
 boxplot(crime$wser,
         cex.main = 0.8,
-        main = 'Weekly Wage for Service Industry',
-        ylab = 'Wage in $')
+        main = "Weekly Wage for Service Industry",
+        ylab = "Wage in $")
 ```
 
 This one value is not only over over 9 standard deviations from the mean (as seen below) of wser wages, but greater than any other weekly wage value in the state.
@@ -124,14 +124,14 @@ summary(crime$wser_imp)
 The variable for police per capita (`polpc`) also has a notable outlier. This has immediately generated some incongruent results with the rest of the dataset when segmented by region, as seen in the regression plots below.
 
 ```{r}
-crime$region <- ifelse(crime$west == 1, 'west', ifelse(crime$central == 1, 'central', 'other'))
+crime$region <- ifelse(crime$west == 1, "west", ifelse(crime$central == 1, "central", "other"))
 ggplot(crime, aes(polpc, crmrte)) +
 geom_point() +
 facet_grid(region~.) +
-geom_smooth(method = 'lm', se = FALSE) +
-  xlab('Police per capita') +
-  ylab('Crime Rate') +
-  ggtitle('Police per Capita vs. Crime Rate by Region')
+geom_smooth(method = "lm", se = FALSE) +
+  xlab("Police per capita") +
+  ylab("Crime Rate") +
+  ggtitle("Police per Capita vs. Crime Rate by Region")
 ```
 
 It is clear that the impact of this observation is significant to the trend of police per capita on crime rate. And, while perhaps possible, it is not representative of the rest of the population. Additionally, according to governing.com, police per population in Washington DC (where the highest concentration of police force might be expected) is 0.0065, significantly lower than this outlier.
@@ -153,19 +153,19 @@ Furthermore, this outlier in police per capita occurs in the same observation as
 ggplot(crime, aes(polpc, prbarr)) +
   geom_point() +
   facet_grid(region~.) +
-  geom_smooth(method = 'lm', se = FALSE) +
-  xlab('Police per capita, $') +
-  ylab('Probability of arrest') +
-  ggtitle(paste('Demonstration of relationship between Police per Capita and',
-                'Probability of Arrest', sep = "\n"))
+  geom_smooth(method = "lm", se = FALSE) +
+  xlab("Police per capita, $") +
+  ylab("Probability of arrest") +
+  ggtitle(paste("Demonstration of relationship between Police per Capita and",
+                "Probability of Arrest", sep = "\n"))
 ```
 
 The unrepresentativeness of these outliers can be demonstrated when correlation between two variables is compared. The correlation changes from positive to negative if the observation with the outlier is excluded:
 
 ```{r}
-cat('Correlation with the outlier inlcuded:',
+cat("Correlation with the outlier inlcuded:",
     cor(crime$polpc, crime$prbarr), "\n")
-cat('Correlation with the outlier excluded:',
+cat("Correlation with the outlier excluded:",
     cor(crime[-51,]$polpc, crime[-51,]$prbarr), "\n")
 ```
 
@@ -188,9 +188,9 @@ To conclude our initial data exploration, an easy-to-reference correlation heatm
 
 ```{r}
 ind_variables <- c(
-  'crmrte', 'prbarr_imp', 'prbconv', 'prbpris', 'avgsen', 'polpc_imp',
-  'density', 'taxpc', 'west', 'central', 'urban', 'pctmin80', 'wcon', 'wtuc',
-  'wtrd', 'wfir', 'wser_imp', 'wmfg', 'wfed', 'wsta', 'wloc', 'mix', 'pctymle'
+  "crmrte", "prbarr_imp", "prbconv", "prbpris", "avgsen", "polpc_imp",
+  "density", "taxpc", "west", "central", "urban", "pctmin80", "wcon", "wtuc",
+  "wtrd", "wfir", "wser_imp", "wmfg", "wfed", "wsta", "wloc", "mix", "pctymle"
 )
 
 cor_mat <- round(cor(crime[,ind_variables]),2)
@@ -204,60 +204,60 @@ cor_mat_upper2[cor_mat_upper2$value == 1,]$value <- 0
 
 ggplot(data = cor_mat_upper2, aes(Var1, Var2, fill = value)) +
   geom_tile() +
-  scale_fill_gradient2(low = 'blue', high = 'red', mid = 'white',
-                        midpoint = 0, limit = c(-1,1), space = 'Lab',
-                        name = 'Correlation') +
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white",
+                        midpoint = 0, limit = c(-1,1), space = "Lab",
+                        name = "Correlation") +
   theme_minimal() +
-  scale_x_discrete(position = 'top') +
+  scale_x_discrete(position = "top") +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 8, hjust = 0),
         axis.title.x=element_blank(),
         axis.title.y=element_blank()) +
   coord_fixed() +
-  ggtitle('Correlation Matrix')
+  ggtitle("Correlation Matrix")
 ```
 
 ### Summary of variables
 
 The table below summarizes all variables in the dataset, and includes the expected impact of each on the dependent variable, crime rate, along with the actual correlation. Also included, as a framework for the analysis, is an assessment of the rapidity at which policy could be enacted and be effective. The support and lobbying for judges with perspectives that would support policies relating to custodial terms and their length, could be implemented quickly. However developing incentives and strategies to reduce population density will take a longer time to generate results.
 
-```{r}
-var_labels <- c('crimes committed per person', 'probability of arrest',
-  'probability of conviction', 'probability of prison sentence',
-  'avg. sentence, days', 'police per capita', 'people per sq. mile',
-  'tax revenue per capita', '=1 if in western N.C.', '=1 if in central N.C.',
-  '=1 if in SMSA', 'perc. minority, 1980', 'weekly wage, construction',
-  'wkly wge, trns, util, commun', 'wkly wge, whlesle, retail trade',
-  'wkly wge, fin, ins, real est', 'wkly wge, service industry',
-  'wkly wge, manufacturing', 'wkly wge, fed employees',
-  'wkly wge, state employees', 'wkly wge, local gov emps',
-  'offense mix: face-to-face/other', 'percent young male')
+```{r, echo = FALSE}
+var_labels <- c("crimes committed per person", "probability of arrest",
+  "probability of conviction", "probability of prison sentence",
+  "avg. sentence, days", "police per capita", "people per sq. mile",
+  "tax revenue per capita", "=1 if in western N.C.", "=1 if in central N.C.",
+  "=1 if in SMSA", "perc. minority, 1980", "weekly wage, construction",
+  "wkly wge, trns, util, commun", "wkly wge, whlesle, retail trade",
+  "wkly wge, fin, ins, real est", "wkly wge, service industry",
+  "wkly wge, manufacturing", "wkly wge, fed employees",
+  "wkly wge, state employees", "wkly wge, local gov emps",
+  "offense mix: face-to-face/other", "percent young male")
 
-impact <- c('Dependent', 'Negative' , 'Negative', 'Negative', 'Negative',
-  'Negative', 'Positive', 'Negative', 'Unclear', 'Unclear', 'Unclear',
-  'Unclear', 'Negative','Negative','Negative', 'Negative', 'Negative',
-  'Negative', 'Negative', 'Negative', 'Negative', 'Unclear','Positive')
+impact <- c("Dependent", "Negative" , "Negative", "Negative", "Negative",
+  "Negative", "Positive", "Negative", "Unclear", "Unclear", "Unclear",
+  "Unclear", "Negative","Negative","Negative", "Negative", "Negative",
+  "Negative", "Negative", "Negative", "Negative", "Unclear","Positive")
 
-control <- c('NA', 'Medium Term', 'Medium Term', 'Short Term', 'Short Term',
-  'Medium Term', 'Long Term', 'Long Term',
-  'No', 'No', 'No', 'Long Term',
-  'Medium Term', 'Medium Term', 'Medium Term',
-  'Medium Term', 'Medium Term', 'Medium Term', 'Medium Term',
-  'Short Term', 'Medium Term', 'No', 'Long Term')
+control <- c("NA", "Medium Term", "Medium Term", "Short Term", "Short Term",
+  "Medium Term", "Long Term", "Long Term",
+  "No", "No", "No", "Long Term",
+  "Medium Term", "Medium Term", "Medium Term",
+  "Medium Term", "Medium Term", "Medium Term", "Medium Term",
+  "Short Term", "Medium Term", "No", "Long Term")
 
 cor_w_crimerate <- round(cor(crime[,ind_variables])[1,],2)
 desc <- data.frame(ind_variables, var_labels, impact, cor_w_crimerate, control,
                    row.names = NULL)
-colnames(desc) <- c('Explanatory Variables', 'Explanation',
-  'Expected Impact on Crime Rate', 'Correlation w/ Crime Rate',
-  'Policy Impact Timeframe')
+colnames(desc) <- c("Explanatory Variables", "Explanation",
+  "Expected Impact on Crime Rate", "Correlation w/ Crime Rate",
+  "Policy Impact Timeframe")
 
-kable(desc, booktabs = TRUE, align = c('llccc')) %>%
-  kable_styling(latex_options = c('scale_down'), full_width = FALSE) %>%
+kable(desc, booktabs = TRUE, align = c("llccc")) %>%
+  kable_styling(latex_options = c("scale_down"), full_width = FALSE) %>%
   row_spec(0, bold = TRUE) %>%
-  column_spec(1, width = '8em') %>%
-  column_spec(3, width = '10em') %>%
-  column_spec(4, width = '8em') %>%
-  column_spec(5, width = '9em')
+  column_spec(1, width = "8em") %>%
+  column_spec(3, width = "10em") %>%
+  column_spec(4, width = "8em") %>%
+  column_spec(5, width = "9em")
 ```
 
 ## The Model Building Process
@@ -291,19 +291,19 @@ par(mfrow=c(1,2))
 hist(crime$crmrte,
      breaks = 15,
      xlim = c(0,0.1),
-     col = 'darkblue',
+     col = "darkblue",
      cex.main = 1,
      cex.axis = 0.8,
-     xlab = 'Crime Rate',
-     main = 'Histogram for Crime Rate')
+     xlab = "Crime Rate",
+     main = "Histogram for Crime Rate")
 hist(log(crime$crmrte),
      breaks = 15,
      xlim = c(-6,-2),
      cex.main = 1,
      cex.axis = 0.8,
-     xlab = 'Log of Crime Rate',
-     col = 'darkgreen',
-     main = 'Histogram for Log of Crime Rate')
+     xlab = "Log of Crime Rate",
+     col = "darkgreen",
+     main = "Histogram for Log of Crime Rate")
 ```
 
 Based on the above charts, `crmrte` is skewed towards the right tail (a number of counties have large crime rates). The log of `crmrte`, on the other hand, looks normally distributed. This definition of the dependent variables will help us build a model with a better fit.
@@ -314,11 +314,11 @@ Our primary focus in this analysis is two variables: `prbarr` and `prbconv`. The
 
 Earlier in this report, we hypothesised that these two variables will have negative impact on our dependent variable: the higher the probabilities of arrest and conviction, the lower the crime rate. Before building a model with these two variables, however, we want to make a case of including two more variables in our first model: `density` and `west`.
 
-First, let’s consider crime rate by region (we recoded the third region as 'other' for analysis purposes):
+First, let’s consider crime rate by region (we recoded the third region as "other" for analysis purposes):
 
 ```{r}
-crime$region <- ifelse(crime$west == 1, 'west',
-                       ifelse(crime$central == 1, 'central', 'other'))
+crime$region <- ifelse(crime$west == 1, "west",
+                       ifelse(crime$central == 1, "central", "other"))
 aggregate(crmrte ~ region, data = crime, mean)
 ```
 
@@ -329,8 +329,8 @@ On the other hand, density has the highest correlation with crime rate (0.73). A
 ```{r}
 ggplot(crime, aes(density, crmrte)) +
   geom_point() +
-  geom_smooth(method = 'lm', se = FALSE) +
-  ggtitle('Crime Rate vs. Density')
+  geom_smooth(method = "lm", se = FALSE) +
+  ggtitle("Crime Rate vs. Density")
 ```
 
 We also know that `west` and `density` have a different relationship with `crmrte`; even though crime rate is the lowest in the West, density is the highest in the Central region. Hence, we need both `west` and `density` in our initial model to get unbiased estimates of `prbarr` and `prbconv`.
@@ -343,7 +343,7 @@ aggregate(density ~ region, data = crime, mean)
 
 ### Model #1
 
-Our first model contains four variables: `density`, `west`, `prbarr`, `prbconv`. 
+Our first model contains four variables: `density`, `west`, `prbarr`, `prbconv`.
 However first, since the two probability variables are on the scale from 0 and 1 (except the outliers), we will multiply them both by 100 to change the scale to 0 to 100. This will allow the interpretation to be: the % change in crime rate per one point change in probability.
 
 ```{r}
@@ -353,10 +353,10 @@ crime$prbconv100 <- 100*crime$prbconv
 
 
 ```{r}
-model1.ind_vars <- c('density', 'west', 'prbarr_imp100', 'prbconv100')
-model1.formula <- as.formula(paste('log(crmrte) ~',
-                                   paste(model1.ind_vars, collapse = ' + '),
-                                   sep = ' '))
+model1.ind_vars <- c("density", "west", "prbarr_imp100", "prbconv100")
+model1.formula <- as.formula(paste("log(crmrte) ~",
+                                   paste(model1.ind_vars, collapse = " + "),
+                                   sep = " "))
 model1 <- lm(model1.formula, data = crime)
 
 interpret1 <- c("","For each person per square mile increase in density, 
@@ -372,8 +372,8 @@ coef1 <- data.frame("Model 1 Coefficients" = round(model1$coefficients,4),
                     "Interpretation" = interpret1)
 
 kable(coef1, booktabs = TRUE) %>%
-  kable_styling(font_size = 8, full_width = FALSE) %>% 
-      column_spec(3, width = '35em')
+  kable_styling(font_size = 8, full_width = FALSE) %>%
+      column_spec(3, width = "35em")
 ```
 
 Our model is consistent with our initial hypothesis: both probability variables have a negative impact on crime rate. Moreover, a one-point change in probability of arrest has almost three times larger impact on crime rate than one-point change in probability of conviction. This confirms our hypothesis that probability of arrest has a stronger effect on crime rate because it's closer to the act of crime (being arrested is easier to relate to than being convicted).
@@ -409,9 +409,9 @@ Correlation is strongest between the logs of both variables:
 
 ```{r}
 descriptions <- c(
-  'log(crmrte), log(polpc)',
-  'log(crmrte), polpc',
-  'crmrte, polpc'
+  "log(crmrte), log(polpc)",
+  "log(crmrte), polpc",
+  "crmrte, polpc"
 )
 correlations <- c(
   round(cor(crime$polpc_imp.ln, log(crime$crmrte)), 4),
@@ -419,76 +419,84 @@ correlations <- c(
   round(cor(crime$polpc, crime$crmrte), 4)
 )
 crmrte.polpc.cor <- data.frame(descriptions, correlations)
-kable(crmrte.polpc.cor, col.names = c('Variables', 'Correlation'),
+kable(crmrte.polpc.cor, col.names = c("Variables", "Correlation"),
       booktabs = TRUE)
 ```
 
 We also combine `west` and the transformed `polpc` (`polpc_imp.ln`) by multiplying them. Why do we add this interaction? Because the police per capita in the West region has much lower correlation with crime rate than police per capita in the other regions, as is shown here:
 
 ```{r}
-region <- c('West',
-            'Central',
-            'Other')
+region <- c("West",
+            "Central",
+            "Other")
 
 region_cor <- c(
-  round(cor(log(crime[crime$region=='west',]$crmrte),crime[crime$region=='west',]$polpc_imp.ln),2),
-  round(cor(log(crime[crime$region=='central',]$crmrte),crime[crime$region=='central',]$polpc_imp.ln),2),
-  round(cor(log(crime[crime$region=='other',]$crmrte),crime[crime$region=='other',]$polpc_imp.ln),2)    
+  round(cor(log(crime[crime$region=="west",]$crmrte),
+            crime[crime$region=="west",]$polpc_imp.ln),2),
+  round(cor(log(crime[crime$region=="central",]$crmrte),
+            crime[crime$region=="central",]$polpc_imp.ln),2),
+  round(cor(log(crime[crime$region=="other",]$crmrte),
+            crime[crime$region=="other",]$polpc_imp.ln),2)
 )
 cor.by.region <- data.frame(region, region_cor)
-kable(cor.by.region, col.names = c('Region', 'Correlation'),
+kable(cor.by.region, col.names = c("Region", "Correlation"),
       booktabs = TRUE)
 ```
 
 Now, to the actual model:
 
 ```{r}
-model2.ind_vars <- c('density', 'west', 'prbarr_imp100', 'prbconv100',
-                     'polpc_imp.ln', 'pctmin80', 'west*polpc_imp.ln')
-model2.formula <- as.formula(paste('log(crmrte) ~ ',
-                                   paste(model2.ind_vars, collapse = ' + '),
-                                   sep = ''))
+model2.ind_vars <- c("density", "west", "prbarr_imp100", "prbconv100",
+                     "polpc_imp.ln", "pctmin80", "west*polpc_imp.ln")
+model2.formula <- as.formula(paste("log(crmrte) ~ ",
+                                   paste(model2.ind_vars, collapse = " + "),
+                                   sep = ""))
 model2 <- lm(model2.formula, data = crime)
+```
 
-interpret2 <- c("","(Before: 0.14): The effect of density has decreased as we are controling for
-                more factors. For each person per square mile increase in density, 
-                crime rate increases by 9.9%",
-                "(Before: -0.39): This coefficient cannot be interpreted by itself 
-                as it is now part of interaction with police per capita. 
-                See explanation below",
-                "(Before: -0.0169): The probability of arrest has a  
-                stronger effect. 
-                A single point of increase in the probability of arrest results 
-                in a 2.02% decrease in the crime rate",
-                "(Before: -0.0069): The effect of the probability of conviction 
-                has also increased slightly. For each point increase in the probability of 
-                arrest, crime rate decreases by 0.74%",
-                "This coefficient indicates that a 1% increase in police per capita is associated 
-                with a 0.63% increase in crime rate in all regions but West",
-                "This coefficient indicates that 1 percent point increase in the minority 
-                population means a 0.99% increase in crime per capita",
-                "See explanation below")
+```{r, echo = FALSE}
+interpret2 <- c(
+  "",
+  "(Before: 0.14): The effect of density has decreased as we are controlling for
+  more factors. For each person per square mile increase in density,
+  crime rate increases by 9.9%",
+  "(Before: -0.39): This coefficient cannot be interpreted by itself
+  as it is now part of interaction with police per capita.
+  See explanation below",
+  "(Before: -0.0169): The probability of arrest has a
+  stronger effect.
+  A single percentage increase in the probability of arrest results
+  in a 2.02% decrease in the crime rate",
+  "(Before: -0.0069): The effect of the probability of conviction
+  has also increased slightly. For approximately each percentage increase in the
+  probability of arrest, crime rate decreases by 0.74%",
+  "This coefficient indicates that a 1% increase in police per capita is associated
+  with a 0.63% increase in crime rate in all regions but West",
+  "This coefficient indicates that 1 percent point increase in the minority
+  population means a 0.99% increase in crime per capita",
+  "See explanation below")
 
-coef2 <- data.frame("Model 2 Coefficients" = round(model2$coefficients,4), 
+coef2 <- data.frame("Model 2 Coefficients" = round(model2$coefficients, 4),
                     "Interpretation" = interpret2)
 
 kable(coef2, booktabs = TRUE) %>%
-  kable_styling(font_size = 8, full_width = FALSE) %>% 
-      column_spec(3, width = '35em')  
+  kable_styling(font_size = 8, full_width = FALSE) %>%
+      column_spec(3, width = "35em")
 ```
 
-The interaction term is harder to interpret. It applies only to the West region. That means that $polpc\_imp.ln$ coefficient of 0.636 applies only to Central and Other regions. In the West the coefficient for $polpc\_imp.ln$ is actually 0.0064 (0.6360 - 0.6296) or per each percent change in police per capita in the West, there is only 0.64% change in crime rate. This value is close to zero and implies no significant relationship between two variables in that region. This is supported by correlations we examined earlier in this section. 
-As for the $west$ coefficient, it also cannot be interpreted in isolation because setting $polpc\_imp.ln$ to zero does not make practical sense. If on the other hand, we use mean $polpc\_imp.ln$ value for the West region then the partial effect for $west$ is:
+The interaction term is harder to interpret. It applies only to the West region. That means that `polpc_imp.ln` coefficient of 0.636 applies only to Central and Other regions. In the West the coefficient for `polpc_imp.ln` is actually 0.0064 (0.6360 - 0.6296) or per each percent change in police per capita in the West, there is only 0.64% change in crime rate. This value is close to zero and implies no significant relationship between two variables in that region. This is supported by correlations we examined earlier in this section.
+
+As for the `west` coefficient, it also cannot be interpreted in isolation because setting `polpc_imp.ln` to zero does not make practical sense. If on the other hand, we use the mean of `polpc_imp.ln` for the West region then the partial effect for `west` is as follows:
 
 ```{r}
-mean_polpc <- mean(crime[crime$region=='west',]$polpc_imp.ln)
-coef_west_polpc <- model2$coefficients['west:polpc_imp.ln']
-coef_west <- model2$coefficients['west']
+mean_polpc <- mean(crime[crime$region=="west",]$polpc_imp.ln)
+coef_west_polpc <- model2$coefficients["west:polpc_imp.ln"]
+coef_west <- model2$coefficients["west"]
 coef_west + coef_west_polpc*mean_polpc
 ```
 
 
-This second model remains consistent with our initial hypothesis, and actually improves the strength of both probability variables slightly. The overall predictive strength of the model has also increased. The adjusted $R^2$ for this model is 80.1%, which is 12.9 percent points higher than our first model:
+This second model remains consistent with our initial hypothesis, and actually improves the strength of both probability variables slightly. The overall predictive strength of the model has also increased. The adjusted $R^2$ for this model is 80.1, which is 12.9 points higher than our first model:
 
 ```{r}
 summary(model2)$adj.r.squared
@@ -505,9 +513,9 @@ coeftest(model2, vcov = vcovHC, level = 0.05)
 Finally, our last model includes all variables, including our imputed variables. We transform all wage variables by taking their natural log. This will allow us to interpret the coefficients as elasticities instead of using absolute wage changes.
 
 ```{r}
-wage.vars <- c('wcon', 'wtuc', 'wtrd', 'wfir', 'wser_imp', 'wmfg', 'wfed',
-               'wsta', 'wloc')
-wage.vars.ln <- mapply(function(var.name) paste(var.name, '.ln', sep=''),
+wage.vars <- c("wcon", "wtuc", "wtrd", "wfir", "wser_imp", "wmfg", "wfed",
+               "wsta", "wloc")
+wage.vars.ln <- mapply(function(var.name) paste(var.name, ".ln", sep=""),
                        wage.vars)
 crime[, wage.vars.ln] <- log(crime[, wage.vars])
 ```
@@ -515,14 +523,14 @@ crime[, wage.vars.ln] <- log(crime[, wage.vars])
 And then we create our third model, which includes all of variables, transformed as needed:
 
 ```{r}
-model3.ind_vars <- c('prbarr_imp100', 'prbconv100', 'prbpris', 'avgsen',
-                     'polpc_imp.ln', 'density', 'taxpc', 'west', 'central',
-                     'urban', 'pctmin80', 'wcon.ln', 'wtuc.ln', 'wtrd.ln',
-                     'wfir.ln', 'wser_imp.ln', 'wmfg.ln', 'wfed.ln', 'wsta.ln',
-                     'wloc.ln', 'mix', 'pctymle')
-model3.formula <- as.formula(paste('log(crmrte) ~ ',
-                                   paste(model3.ind_vars, collapse = ' + '),
-                                   sep = ''))
+model3.ind_vars <- c("prbarr_imp100", "prbconv100", "prbpris", "avgsen",
+                     "polpc_imp.ln", "density", "taxpc", "west", "central",
+                     "urban", "pctmin80", "wcon.ln", "wtuc.ln", "wtrd.ln",
+                     "wfir.ln", "wser_imp.ln", "wmfg.ln", "wfed.ln", "wsta.ln",
+                     "wloc.ln", "mix", "pctymle")
+model3.formula <- as.formula(paste("log(crmrte) ~ ",
+                                   paste(model3.ind_vars, collapse = " + "),
+                                   sep = ""))
 model3 <- lm(model3.formula, data = crime)
 summary(model3)$adj.r.squared
 ```
@@ -536,10 +544,10 @@ se.model1 <- sqrt(diag(vcovHC(model1)))
 se.model2 <- sqrt(diag(vcovHC(model2)))
 se.model3 <- sqrt(diag(vcovHC(model3)))
 stargazer(model1, model2, model3,
-          type = 'text', omit.stat = 'f',
+          type = "text", omit.stat = "f",
           se = list(se.model1, se.model2, se.model3),
           star.cutoffs = c(0.05, 0.01, 0.001),
-          font.size = 'tiny',
+          font.size = "tiny",
           no.space = FALSE,
           align = TRUE)
 ```
@@ -553,61 +561,60 @@ stargazer(model1, model2, model3,
  - $pctmin80$ is also robust as its coefficient stays statistically significant in model #3
  - All other variables are not statistically significant in model #3. The only exception is $central$. However, when we tested this variable in model #2 it didn't maintain its significance. Hence, it is highly sensitive to model definition
 
-
 ### Residual Analysis
 
 ```{r}
 par(mfrow=c(1,2))
-plot(model1, which = 1, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
-     caption = 'Model 1:\nResiduals vs. Fitted')
-plot(model2, which = 1, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
-     caption = 'Model 2:\nResiduals vs. Fitted')
+plot(model1, which = 1, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8,
+     caption = "Model 1:\nResiduals vs. Fitted")
+plot(model2, which = 1, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8,
+     caption = "Model 2:\nResiduals vs. Fitted")
 ```
 
 ```{r}
 par(mfrow=c(1,2))
-plot(model1, which = 2, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
-     main = 'Model 1:\nNormal Q-Q', caption = '')
-plot(model2, which = 2, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
-     main = 'Model 2:\nNormal Q-Q', caption = '')
+plot(model1, which = 2, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8,
+     main = "Model 1:\nNormal Q-Q", caption = "")
+plot(model2, which = 2, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8,
+     main = "Model 2:\nNormal Q-Q", caption = "")
 ```
 
 ```{r}
 par(mfrow=c(1,2))
-plot(model1, which = 3, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
-     main = 'Model 1:\nScale-Location', caption = '')
-plot(model2, which = 3, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
-     main = 'Model 2:\nScale-Location', caption = '')
+plot(model1, which = 3, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8,
+     main = "Model 1:\nScale-Location", caption = "")
+plot(model2, which = 3, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8,
+     main = "Model 2:\nScale-Location", caption = "")
 ```
 
 ```{r}
 par(mfrow=c(1,2))
-plot(model1, which = 5, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
-     main = 'Model 1:\nResiduals vs. Leverage',
-     caption = '')
-plot(model2, which = 5, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8, 
-     main = 'Model 2:\nResiduals vs. Leverage',
-     caption = '')
+plot(model1, which = 5, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8,
+     main = "Model 1:\nResiduals vs. Leverage",
+     caption = "")
+plot(model2, which = 5, cex.main = 0.8, cex.axis = 0.8, cex.lab = 0.8,
+     main = "Model 2:\nResiduals vs. Leverage",
+     caption = "")
 ```
 
 ```{r}
 par(mfrow=c(1,2))
 hist(model1$residuals,
      breaks = 15,
-     col = 'darkblue',
+     col = "darkblue",
      xlim = c(-1,1),
      cex.main = 0.8,
      cex.axis = 0.6,
-     xlab = '',
-     main = 'Model 1 Residuals')
+     xlab = "",
+     main = "Model 1 Residuals")
 hist(model2$residuals,
      breaks = 15,
-     col = 'darkgreen',
+     col = "darkgreen",
      xlim = c(-1,1),
      cex.main = 0.8,
      cex.axis = 0.6,
-     xlab = '',
-     main = 'Model 2 Residuals')
+     xlab = "",
+     main = "Model 2 Residuals")
 ```
 
 ## Omitted Variable Analysis
