@@ -282,7 +282,7 @@ Our second model will expand on the first one. We will add variables that help u
 
 The third model will contain all provided variables (except county and year). This model will be used to demonstrate that our model #2 is robust.
 
-The last part of this report will focus on residuals of all three models.
+The last part of this section will focus on residuals of all three models.
 
 ### Dependent variable
 
@@ -290,9 +290,9 @@ Our dependent variable is crime rate (`crmrte`), which is defined as "Crimes com
 
 After careful consideration, in order for us to understand the impact of our main causal effects (probability of arrest and probability of conviction) onto crime rate, we decided to transform our dependent variable by taking a natural log.
 
-Since this variable is a ratio (crimer per person), hypothetically it can vary between 0 and 1 (though it’s highly unlikely to find a county with such a high crime rate). This makes it not very suitable for OLS because this method can predict values outside 0 to 1 range. Natural log will help us only with part of the problem (avoiding negative values in prediction of actual crime rate). Caveat: in our dataset crime rate variable is never equal to zero. Hence, transformation is straight forward. However, since zero is a real possible value, we would need to watch out for those values while transforming crime rate in different datasets.
+Since this variable is a ratio (crimes per person), hypothetically it can vary between 0 and 1 (though it’s highly unlikely to find a county with such a high crime rate). This makes it not very suitable for OLS because this method can predict values outside 0 to 1 range. Natural log will help us only with part of the problem (avoiding negative values in prediction of actual crime rate). Caveat: in our dataset crime rate variable is never equal to zero. Hence, transformation is straight forward. However, since zero is a real possible value, we would need to watch out for those values while transforming crime rate in different datasets.
 
-This transformation would also allow us to interpret the coefficients of predictive factors as semi-elasticities: if probability of arrest goes up by one point, then the crime rate decreases by `100*y%` (assuming our stated hypothesis is true and the probability of arrest `prbarr` has a negative effect). If we were to keep the variable as is, we would interpret the coefficient for `prbarr` as: if probability of arrest goes up by one point, then the crime rate decreases by `y` crimes per person. However, this interpretation does not allow us to judge the practical significance of the effect (is that `y` big or small?).
+This transformation would also allow us to interpret the coefficients of predictive factors as semi-elasticities: if probability of arrest goes up by one point, then the crime rate decreases by `100*y%` (assuming our stated hypothesis is true and the probability of arrest `prbarr` has a negative effect). If we were to keep the variable as is, we would interpret the coefficient for `prbarr` as: if probability of arrest goes up by one point, then the crime rate decreases by `y` crimes per person. However, this interpretation does not allow us to judge the practical significance of the effect (is `y` big or small?).
 
 Let's take a look at histograms for `crmrte` (as it is and transformed):
 
@@ -311,7 +311,7 @@ hist(log(crime$crmrte),
      main = "Histogram for Log of Crime Rate")
 ```
 
-Based on the above charts, `crmrte` is skewed towards the right tail (a number of counties has large crime rates). The log of `crmrte`, on the other hand, looks normally distributed. This definition of the dependent variables will help us build a model with a better fit.
+Based on the above charts, `crmrte` is skewed towards the right tail (a number of counties have large crime rates). The log of `crmrte`, on the other hand, looks normally distributed. This definition of the dependent variables will help us build a model with a better fit.
 
 ### Main control variables
 
@@ -373,7 +373,7 @@ interpret1 <- c("","For each person per square mile increase in density,
                 regions on average (and controlling for all other included variables)",
                 "For approximately each percentage increase in probability of arrest,
                 crime rate decreases by 1.69%",
-                "For approximately each percentage increase in probability of arrest,
+                "For approximately each percentage increase in probability of conviction,
                 crime rate decreases by 0.69%")
 
 coef1 <- data.frame("Model 1 Coefficients" = round(model1$coefficients,4),
@@ -403,7 +403,7 @@ coeftest(model1, vcov = vcovHC, level = 0.05)
 ### Model #2
 
 We tested most of other variables in the dataset that potentially could be related to crime rate (using correlations). At the end we decided to add the following variables: `polpc`, `pctmin80`, and an interaction of `west` and `polpc`.
-Police per capita is not only highly correlated with crime rate, but it does seem to have direct link to crime. What we see from correlation analysis is counter intuitive at first glance: the higher police per capita, the higher crime rate. Logically, we would expect that increasing police presence would decrease crime rate over time. However, this dataset is panel data at one moment in time, not a time series. Hence, counties with higher police per capita require more police presence. Therefore, this variable is necessary for control purposes and it improves the fit of the model.
+Police per capita is not only highly correlated with crime rate, but it does seem to have a direct link to crime. What we see from correlation analysis is counter-intuitive at first glance: the higher police per capita, the higher crime rate. Logically, we would expect that increasing police presence would decrease crime rate over time. However, this dataset is panel data at one moment in time, not a time series. Hence, counties with higher crime per capita require more police presence. Therefore, this variable is necessary for control purposes and it improves the fit of the model.
 
 Percent minorities also helps with model fit. It is hard to hypothesize why correlation with crime rate is positive. Do poorer counties have larger minority populations? In this case, personal income would be a confounding variable that we don’t have. Or counties with more minorities have more gangs (on the ethnic basis)? This would also be a confounding variable. In any case, percent minorities will be used as representative of omitted factors.
 
