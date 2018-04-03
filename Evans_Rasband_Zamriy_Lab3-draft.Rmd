@@ -230,7 +230,7 @@ Based on the above matrix a few important patterns have been identified:
 
 The table below summarizes all variables in the dataset, and includes the expected impact of each on the dependent variable, crime rate, along with the actual correlation. Also included, as a framework for the analysis, is an assessment of the rapidity at which policy could be enacted and be effective. The support and lobbying for judges with perspectives that would support policies relating to custodial terms and their length, could be implemented quickly. However developing incentives and strategies to reduce population density, for example, will take a longer time to generate results.
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 var_labels <- c("crimes committed per person", "probability of arrest",
   "probability of conviction", "probability of prison sentence",
   "avg. sentence, days", "police per capita", "people per sq. mile",
@@ -366,7 +366,7 @@ model1.formula <- as.formula(paste("log(crmrte) ~",
 model1 <- lm(model1.formula, data = crime)
 ```
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 interpret1 <- c("","For each person per square mile increase in density,
                 crime rate increases by 13.7% when everything else stays the same",
                 "Crime rate in the West is 39.4% lower than in Central and Other
@@ -462,7 +462,7 @@ model2.formula <- as.formula(paste("log(crmrte) ~ ",
 model2 <- lm(model2.formula, data = crime)
 ```
 
-```{r, echo = FALSE}
+```{r, echo = TRUE}
 interpret2 <- c(
   "",
   "(Before: 0.14): The effect of density has decreased as we are controlling for
@@ -554,9 +554,7 @@ stargazer(model1, model2, model3,
           type = "text", omit.stat = "f",
           se = list(se.model1, se.model2, se.model3),
           star.cutoffs = c(0.05, 0.01, 0.001),
-          font.size = "tiny",
-          no.space = FALSE,
-          align = TRUE)
+          no.space = TRUE, align = TRUE)
 ```
 
 
@@ -620,13 +618,11 @@ Our dataset contains more than 30 observations (91 to be precise). Hence, we can
 par(mar=c(2,4,2,0))
 par(mfrow=c(1,2))
 hist(model1$residuals,
-     breaks = 15,  col = "darkblue",
-     xlim = c(-1,1),
+     breaks = 15,  col = "darkblue", xlim = c(-1,1),
      cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6, xlab = "",
      main = "Model 1 Residuals")
 hist(model2$residuals,
-     breaks = 15, col = "darkgreen",
-     xlim = c(-1,1),
+     breaks = 15, col = "darkgreen", xlim = c(-1,1),
      cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6, xlab = "",
      main = "Model 2 Residuals")
 ```
