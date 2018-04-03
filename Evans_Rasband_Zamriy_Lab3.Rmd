@@ -489,7 +489,7 @@ kable(coef2, booktabs = TRUE) %>%
       column_spec(3, width = "35em")
 ```
 
-The interaction term ($west:polpc_imp.ln$) is harder to interpret. It applies only to the West region. That means that `polpc_imp.ln` coefficient of 0.636 applies only to Central and Other regions. In the West the coefficient for `polpc_imp.ln` is actually 0.0064 (0.6360 - 0.6296) or per each percent change in police per capita in the West, there is only 0.0064% change in crime rate. This value is close to zero and implies no significant relationship between two variables in that region. This is supported by correlations we examined earlier in this section.
+The interaction term ($west:polpc\_imp.ln$) is harder to interpret. It applies only to the West region. That means that `polpc_imp.ln` coefficient of 0.636 applies only to Central and Other regions. In the West the coefficient for `polpc_imp.ln` is actually 0.0064 (0.6360 - 0.6296) or per each percent change in police per capita in the West, there is only 0.0064% change in crime rate. This value is close to zero and implies no significant relationship between two variables in that region. This is supported by correlations we examined earlier in this section.
 
 As for the `west` coefficient, it also cannot be interpreted in isolation because setting `polpc_imp.ln` to zero does not make practical sense. If on the other hand, we use the mean of `polpc_imp.ln` for the West region then the partial effect for `west` is as follows:
 
