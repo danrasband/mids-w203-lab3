@@ -19,9 +19,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 *Peer review*: The motivation for this team's report is to examine the data to come up with conclusions about which variables in which contexts have had an effect on crime rate so that an informed political candidate might try to effect changes in those areas. A few comments on the content:
 
- - What is the intended audience? Currently it is written as if the intended audience is Micah, but I believe the intended audience is the _candidate_
- - Additionally, intended audience (the candidate) is left to its own device to interpret the report and develop initial thoughts on the policies 
- - Definition of terms is not clear. What does it mean "contextualizing models"? "Elastic variables" usually applies to variables in the log-log model. Is that what this term referring to? 
+ - We need to be clear on who the audience of this report will be.  Currently, it is written as if the intended audience is Micah; the intended audience should be the _candidate_
+ - Additionally, it is stated in the introduction that the intended audience (the candidate) should interpret the report and develop initial thoughts on the policies rather than the team provide reccomendations on how to lower crime
+ - Definition of terms is not clear. What does "contextualizing models" mean? "Elastic variables" usually applies to variables in the log-log model and it is unclear if this is what this term referring to 
  - Some spellings and grammar need attention
 
 ## The Initial EDA
@@ -30,53 +30,56 @@ knitr::opts_chunk$set(echo = TRUE)
 
 *Overall comments:*
 
- - Results should be allowed to print out, rather than just shown as comments inline. This ensures accuracy of what is reported and allows for proper comparison with what is written in the prose
- - The biggest challenge with this report is lack of outputs in relevant places
- - On the other hand, there are pieces of code with big outputs, but no relevant commentary on the process, logic and insights
- - Several sentences started with "ultimately"
+ - Results should be allowed to print out, rather than just shown as comments inline. This ensures accuracy of what is reported and allows for proper comparison with what is written in the prose.
+ - The biggest challenge with this report is lack of outputs in relevant places and supporting narrative.
+ - Furthermore, there are pieces of code with big outputs, also with limited commentary on the process, logic and insights.
 
 ### Data Cleaning
 
- - Can use na.omit to remove rows that are missing data, rather than `data <- data[-seq(92,97)]`
- - There's no reason really to remove `county` and `year` from the data. It can be left in and just worked around
- - Nice work on finding the dupes
- - What are the dimensions of the final dataset? How many rows were removed?
+ -Count consider using na.omit to remove rows that are missing data, rather than `data <- data[-seq(92,97)]` as more succinct style
+ - Nice work on finding the duplicates
+ - Once the working dataset is finalized, it would be good to present the updated dimensions, i.e. how many rows were removed
 
 ### Identifying problematic values
 
- - Good arguments to keep the pbarr and pconv over 1
- - Regarding `avgsen`. It represents average sentence across various crimes. Isn’t it possible that there is a much larger number of short sentences (a few days) and a few very long sentences (years) that average to 20 days?
+ - Well thought out arguments to keep the prbarr and prbconv over 1
+ - Regarding `avgsen`. It represents average sentence across various crimes. Isn’t it possible that there is a much larger number of short sentences (a few days) and a few very long sentences (years) that average to 20 days?  Note that sentancing will be handed out from county courts, rather than State or Federal
  
 ### Cross Section Variables
  
- - The zone that is not West or Central is missed 
+ - The zone that is not West or Central is missed in the analysis of these dummy variables
  
 ### Exploring the Dependent Variable
  
  - It is never actually specified that population crmrte denominator is the same as in density numerator
- - Is comparison to Neighborhood Scout valid? Are you comparing to the same state? Is it county level? A little bit more context would be helpful (along with reference to the source)
- - Regarding log transformation. Yes, the values will be negative, but hypothetically positive values are possible as well. So this should not be actually a concern
+ - Some more thought needs to be given to the concept of comparing an average county crime per sq.mile for the state.  This logic could be strongly challenged
+ - Is comparison to Neighborhood Scout valid? Are you comparing to the same state? Is it county level? A little bit more context would be helpful (along with reference to the source). 
+ - Consideration could be given to using the rate per 1000 people in Neighborhood Scout to compare crime rate with, which does then appear reasonable   
+ - Regarding log transformation, the values will be negative but, hypothetically, positive values are possible as well. So this should not be a concern
 
 ### Exploring Potential independent Variable Transformations
 
- - There is a big piece of code here without any output or comments. What is it achieving? You should probably include the charts relevant to at least two transformations that you decided to include (log.polpc and inv.prbarr). Otherwise, there is no clear explanation why you picked them
- - Also why `inv.prbarr` and not `log.prbarr`? The chosen name is confusing.
+ - There is a big piece of code here without any output or comments which should be explained. Relevant charts should probably be included to support at least two transformations (log.polpc and inv.prbarr). Otherwise, there is no clear explanation why they were picked
+ - Also why `inv.prbarr` and not `log.prbarr`? The chosen name is misleading as 'inv' suggests inverse
  
 ### Other independent variables
 
- - There is a lot of code with the output. But what did you achieve with this output? One paragraph summary would be very helpful
- - Now that you've identified outliers, what are you going to do with them?
+ - There is a lot of code with the output all buried in the appendix. One paragraph summary of what was acheived would be very helpful for a reader
+
+### Identifying possible outliers
+
+ - Now that you've identified outliers, some thought as to the origin of these outliers should be provided to decide on what action to take with them 
  
 ### Correlation Analysis
 
- - Great chart! It is a good representation of correlation matrix.
+ - Great chart! It is a good representation of correlation matrix.  Needs a title.
  - Again, a summary with more than one sentence would be helpful. Otherwise, the code and the outputs take all the space without clear purpose
 
 ### Observations from EDA
 
- - Could the observations from EDA be ordered by interest or relivance?  #4 on police per capita interaction is more interesting than urban being correlated with density.  It might be good to pick out those that are most interesting and complementary to the models.  
+ - This is a good summary, but it is mostly related to correlations, not the entire EDA. For example, why no comments on outliers that were identified in one of the sections?
+ - Consider ordering the observations from EDA interest or relevance.  It might be good to pick out those that are most interesting and complementary to the models
  - The discussion around correlation noted between taxpc and crime rate doesn't seem to fit
- - This is a good summary, but it is mostly related to correlations, not the entire EDA. For example, why no comments on outliers that you identified in one of the sections?
 
 ## The Model Building Process 
 
@@ -86,9 +89,9 @@ the outcome variable (or variables) appropriate? Did the team consider available
 *Overall comments:*
 
  - In general, it appears that the concepts learned in the class were not applied (at least explicitly). For example, there is no hypothesis stated about causes of crime and available variables that might capture this relationship
- - The process of model building is automated based on a set of aribitrary rules to allow for "best fit". The researchers' thoughts and logic are missing in this report due to sparse high level commentary and obscure variable selection process
- - However, we do need to state that we learned a lot from this team's work. The methods they used are actually very practical and helpful. But this report might not be the best place to apply them as we are more interested in causality and hypothesis than predictive power of the model
- - Charts could do with titles and labels
+ - The process of model building is automated based on a set of rules that have not been stated to allow for "best fit". The researchers' thoughts and logic are missing in this report due to limited high level commentary and opaque variable selection process
+ - While the methods demonstrated are very practical and helpful, and we learned a lot from their application, be sure their use is within the spirit of this exercise
+ - Remember to include titles and labels on charts
 
 ### Selecting Models
 
@@ -97,7 +100,7 @@ the outcome variable (or variables) appropriate? Did the team consider available
 ### Stepwise Regression
 
  - Why did you decide to do stepwise regression? What are your goals in this analysis? Are you trying to improve the prediction of crime rate? Or are you trying to explain it?
- - The process is not transparent. Why VIF of 3? Why only continuous variables? What are the variables that were tested? They are captured through the helper function, but how do we know that it is doing what you intended? 
+ - The process is not transparent. For example, the choice of VIF of 3 or the use of only continuous variables was never explained.  What are the variables that were tested? They are captured through the helper function, but how do we know that it is doing what you intended?  A reader, such as a political candidate, may struggle to follow here
 
 #### Using Anova to Further Reduce Model Complexity
 
@@ -110,18 +113,16 @@ the outcome variable (or variables) appropriate? Did the team consider available
 
 ### Model using log of crime rate
 
- - Regarding arrests per capita variable. You are multiplying arrests/offences by crimes/pop. Are you confident that offences is the same as crimes? 
+ - Regarding arrests per capita variable. You are multiplying arrests/offences by crimes/pop.  Be confident that 'offences' is the same as 'crimes'
  - How does this variable (arrests per capita variable) help the practical need to identify ways to reduce crimes?
- - Regarding convictions per capita variable. You are multiplying convictions/arrests by crimes/pop. How is it convictions per capita? 
+ - Regarding convictions per capita variable. You are multiplying convictions/arrests by crimes/pop. Confirm this really represents convictions per capita? 
  - Are you sure about your interpretation of the log_crmrte? For example, the direction of the relationship is the same: log(0.05) < log(0.09)
- - There is no coefficient interpretation
- - The motivation from the write-up in this section is unclear
- 
+ - An interpretation of the coefficients would be useful in this section 
+
 ## The Regression Table 
 
 *Instructors prompt*: Are the model specifications properly chosen to outline the boundary of
-reasonable choices? Is it easy to find key coefficients in the regression table? Does the text include a
-discussion of practical significance for key effects?
+reasonable choices? Is it easy to find key coefficients in the regression table? Does the text include a discussion of practical significance for key effects?
  
 *Overall comments:*
 
@@ -132,8 +133,8 @@ discussion of practical significance for key effects?
  - There is no comparison of coefficients across models (where applicable)
  - There is no discussion of practical significance of key effects
 
-### Evaluating most influence datapoints
- - This section has no analysis, mostly outputs. 
+### Evaluating most influen(tial?) datapoints
+ - This section has no analysis, mostly outputs that are not explained.  The charts have different scale of the y axis, that could be aligned to demonstrate the difference more clearly
 
 ## Conclusion
 
@@ -141,16 +142,15 @@ discussion of practical significance for key effects?
 
 *Overall comments:*
 
+ - Conclusions read a little like results. Throw some interpretation of the models in there to back up the claims, and that a good results section.  
  - Where does the conclusions that lower probability of arrest drives crime rates come from? Probability of conviction also appears favorable.
  - Comprehension of the meaning of the inverse prbarr needs to be provided as the story has not naturally led there
- - Conclusions read a little like results. Throw some interpretation of the models in there to back up the claims, and that a good results section.  
+ 
 
 ## The Omitted Variables Discussion
 
 *Instructors prompt*: Did the report miss any important sources of omitted variable bias?
-For each omitted variable, is there a complete discussion of the direction of bias? Are the estimated
-directions of bias correct? Does the team consider possible proxy variables, and if so do you find these
-choices plausible? Is the discussion of omitted variables linked back to the presentation of main results? In other words, does the team adequately re-evaluate their estimated effects in light of the sources of bias?
+For each omitted variable, is there a complete discussion of the direction of bias? Are the estimated directions of bias correct? Does the team consider possible proxy variables, and if so do you find these choices plausible? Is the discussion of omitted variables linked back to the presentation of main results? In other words, does the team adequately re-evaluate their estimated effects in light of the sources of bias?
 
 *Overall comments:*
 
