@@ -1,6 +1,7 @@
 ---
-title: "Feedback"
-author: "Evans, Rasband, Zamriy"
+title: "Peer Review for Lab 3"
+subtitle: "Lab by E. Hulburd, S. Vadakkumkoor, and F. Vergara"
+author: "Reviewed by L. Evans, D. Rasband, and Y. Zamriy"
 date: \today
 output: pdf_document
 ---
