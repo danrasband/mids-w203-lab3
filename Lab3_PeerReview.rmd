@@ -83,8 +83,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## The Model Building Process
 
-*Instructors prompt*: Overall, is each step in the model building process supported by EDA? Is
-the outcome variable (or variables) appropriate? Did the team consider available variable transformations and select them with an eye towards model plausibility and interperability? Are transformations used to expose linear relationships in scatterplots? Is there enough explanation in the text to understand the meaning of each visualization?
+*Instructors prompt*: Overall, is each step in the model building process supported by EDA? Is the outcome variable (or variables) appropriate? Did the team consider available variable transformations and select them with an eye towards model plausibility and interoperability? Are transformations used to expose linear relationships in scatterplots? Is there enough explanation in the text to understand the meaning of each visualization?
 
 *Overall comments:*
 
@@ -102,21 +101,21 @@ the outcome variable (or variables) appropriate? Did the team consider available
 - Why did you decide to do stepwise regression? What are your goals in this analysis? Are you trying to improve the prediction of crime rate? Or are you trying to explain it?
 - The process is not transparent. For example, the choice of VIF of 3 or the use of only continuous variables was never explained.  What are the variables that were tested? They are captured through the helper function, but how do we know that it is doing what you intended? A reader, such as a political candidate, may struggle to follow here.
 
-#### Using Anova to Further Reduce Model Complexity
+#### Using ANOVA to Further Reduce Model Complexity
 
 - Again, why this process? What is the goal here? What hypothesis are you testing?
 
 ### Using Leaps Algorithm to Maximize Adjusted R-Squared
 
-- This is an interesting process to figure out what variables have the best predictive power for the model. But how does it help in acheiving the main objective in this analysis?
+- This is an interesting process to figure out what variables have the best predictive power for the model. But how does it help in achieving the main objective in this analysis?
 - The commentary on `prbarr` should be adjusted as it actually relates to `inv.prbarr`.
 
 ### Model using log of crime rate
 
-- Regarding arrests per capita variable. You are multiplying arrests/offences by crimes/pop.  Be confident that 'offences' is the same as 'crimes'.
+- Regarding arrests per capita variable. You are multiplying arrests/offenses by crimes/pop.  Be confident that 'offenses' is the same as 'crimes'.
 - How does this variable (arrests per capita variable) help the practical need to identify ways to reduce crimes?
 - Regarding convictions per capita variable. You are multiplying convictions/arrests by crimes/pop. Confirm this really represents convictions per capita?
-- Are you sure about your interpretation of the log_crmrte? For example, the direction of the relationship is the same: `log(0.05) < log(0.09)`.
+- Are you sure about your interpretation of the `log_crmrte`? For example, the direction of the relationship is the same: `log(0.05) < log(0.09)`.
 - An interpretation of the coefficients would be useful in this section.
 
 ## The Regression Table
@@ -133,7 +132,7 @@ reasonable choices? Is it easy to find key coefficients in the regression table?
 - There is no comparison of coefficients across models (where applicable).
 - There is no discussion of practical significance of key effects.
 
-### Evaluating most influential datapoints
+### Evaluating most influential data points
 
 - This section has no analysis, mostly outputs that are not explained. The charts have different scale of the y axis, that could be aligned to demonstrate the difference more clearly.
 
