@@ -225,6 +225,32 @@ summary(crime$prbarr_imp)
 
 Though other variables appear to have exceptional values or outliers (particularly probability of arrest and the percent young male), none are as clear. These outliers will be addressed during the development of the models as appropriate and with due consideration for the practical significance and the leverage and influence they have on the models developed.
 
+
+```{r}
+wages <- c("wcon", "wtuc", "wtrd", "wfir", "wser_imp", "wmfg", "wfed", "wsta", "wloc")
+
+crime$w_disparity <- 
+  apply(crime[, wages], 1, FUN=max) - apply(crime[, wages], 1, FUN=min)
+crime$w_disparity_tax <-crime$taxpc / crime$w_disparity 
+crime$crmrte_violent <- crime$crmrte*crime$mix / (1+crime$mix)
+crime$prbpris_v_crime <- crime$prbarr_imp*crime$prbconv*crime$prbpris
+crime$crmrte_violent_shr <- crime$mix / (1+crime$mix)
+crime$prbarr_imp_violent <- crime$crmrte_violent_shr / crime$prbarr_imp
+```
+
+```{r}
+cor(crime$crmrte_violent_shr, crime$prbarr_imp_violent)
+cor(crime$crmrte_violent_shr, crime$prbarr_imp)
+```
+
+
+```{r, fig.height = 4, fig.width = 5, fig.align="center"}
+ggplot(crime, aes(crmrte_violent_shr, prbarr_imp_violent)) +
+  geom_point() +
+  facet_grid(region~.) +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
 ### Correlations
 
 To conclude our initial data exploration, an easy-to-reference correlation heatmap has been developed for quick identification of positive or negative correlations between variables in the data set.
@@ -413,7 +439,7 @@ model1.ind_vars <- c("density", "west", "prbarr_imp100", "prbconv100")
 model1.formula <- as.formula(paste("log(crmrte) ~",
                                    paste(model1.ind_vars, collapse = " + "),
                                    sep = " "))
-model1 <- lm(model1.formula, data = crime[crime$exclude == 0,])
+model1 <- lm(model1.formula, data = crime)
 summary(model1)
 ```
 
@@ -520,7 +546,7 @@ model2.ind_vars <- c("density", "west", "prbarr_imp100", "prbconv100",
 model2.formula <- as.formula(paste("log(crmrte) ~ ",
                                    paste(model2.ind_vars, collapse = " + "),
                                    sep = ""))
-model2 <- lm(model2.formula, data = crime[crime$exclude == 0,])
+model2 <- lm(model2.formula, data = crime)
 summary(model2)
 ```
 
@@ -606,7 +632,7 @@ model3.ind_vars <- c("prbarr_imp100", "prbconv100", "prbpris", "avgsen",
 model3.formula <- as.formula(paste("log(crmrte) ~ ",
                                    paste(model3.ind_vars, collapse = " + "),
                                    sep = ""))
-model3 <- lm(model3.formula, data = crime[crime$exclude == 0,])
+model3 <- lm(model3.formula, data = crime)
 summary(model3)$adj.r.squared
 ```
 
