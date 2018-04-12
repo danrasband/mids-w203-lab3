@@ -274,25 +274,25 @@ kable(desc, booktabs = TRUE, align = c("llccc")) %>%
 
 ### Overview
 
-As we are moving into model building section of the report, let’s outline our objective: identify the impact of causal variables on crime rate to build crime-fighting policies. What are the causal variables of interest in this case? We hypothesize that in this dataset there are two variables that cause crime rate to increase/decrease: probability of arrest and probability of conviction. The third probability variable, `prbpris`, has a weak correlation with crime rate. Most likely this is due to the fact that prison sentence is far enough from the act of a crime to be ineffective in altering criminal behavior.
+As we are moving into model building section of the report, let’s outline our objective: identify the impact of causal variables on crime rate to build crime-fighting policies. What are the causal variables of interest in this case? We hypothesize that in this dataset there are two variables that cause the crime rate to increase/decrease: probability of arrest and probability of conviction. The third probability variable, `prbpris`, has a weak correlation with crime rate. Most likely this is due to the fact that prison sentence is far enough from the act of a crime to be ineffective in altering criminal behavior.
 
 Our first model will be developed with these two variables along with two control variables that will help us to get unbiased estimates of our main variables of interest (explained in the appropriate section).
 
-Our second model will expand on the first one. We will add variables that help us improve the fit of the model without interacting significantly with our main causal effects. The added variables also make sense in term of interpretability.
+Our second model will expand on the first one. We will add variables that help us improve the fit of the model without interacting significantly with our main causal effects. The added variables also make sense in terms of interpretability.
 
 The third model will contain all provided variables (except county and year). This model will be used to demonstrate that our model #2 is robust.
 
-The last part of this section will focus on residuals of all three models.
+The last part of this section will focus on the residuals of all three models.
 
 ### Dependent variable
 
 Our dependent variable is crime rate (`crmrte`), which is defined as "Crimes committed per person."
 
-After careful consideration, in order for us to understand the impact of our main causal effects (probability of arrest and probability of conviction) onto crime rate, we decided to transform our dependent variable by taking a natural log.
+After careful consideration, and in order for us to understand the impact of our main causal effects (probability of arrest and probability of conviction) on crime rate, we decided to transform our dependent variable by taking a natural log.
 
-Since this variable is a ratio (crimes per person), hypothetically it can vary between 0 and 1 (though it’s highly unlikely to find a county with such a high crime rate). This makes it not very suitable for OLS because this method can predict values outside 0 to 1 range. Natural log will help us only with part of the problem (avoiding negative values in prediction of actual crime rate). Caveat: in our dataset crime rate variable is never equal to zero. Hence, transformation is straight forward. However, since zero is a real possible value, we would need to watch out for those values while transforming crime rate in different datasets.
+Since this variable is a ratio (crimes per person), hypothetically it can vary between 0 and 1 (though it’s highly unlikely that one could find a county with such a high crime rate). This makes it not very suitable for OLS because this method can predict values outside the 0 to 1 range. The natural log will help us only with part of the problem (avoiding negative values in the prediction of actual crime rate). There's one caveat: in our dataset, the crime rate variable is never equal to zero. Hence, transformation is straightforward. However, since zero is a real possible value, we would need to watch out for those values while transforming crime rate in different datasets.
 
-This transformation would also allow us to interpret the coefficients of predictive factors as semi-elasticities: if probability of arrest goes up by one point, then the crime rate decreases by `100*y%` (assuming our stated hypothesis is true and the probability of arrest `prbarr` has a negative effect). If we were to keep the variable as is, we would interpret the coefficient for `prbarr` as: if probability of arrest goes up by one point, then the crime rate decreases by `y` crimes per person. However, this interpretation does not allow us to judge the practical significance of the effect (is `y` big or small?).
+This transformation would also allow us to interpret the coefficients of predictive factors as semi-elasticities: if probability of arrest goes up by one point, then the crime rate decreases by `100*y%` (assuming our stated hypothesis is true and the probability of arrest `prbarr` has a negative effect). If we were to keep the variable as is, we would interpret the coefficient for `prbarr` as the following: if probability of arrest goes up by one point, then the crime rate decreases by `y` crimes per person. However, this interpretation does not allow us to judge the practical significance of the effect (is `y` big or small?).
 
 Let's take a look at histograms for `crmrte` (as it is and transformed):
 
@@ -315,9 +315,9 @@ Based on the above charts, `crmrte` is skewed towards the right tail (a number o
 
 ### Main control variables
 
-Our primary focus in this analysis is two variables: `prbarr` and `prbconv`. These two variables, the probability of arrest and the probability of conviction respectively, have relatively high correlation with crime rate and have potential to be influenced by political action. We will try to understand how probability of arrest `prbarr` and probability of conviction `prbconv` impact crime rate. If they are strong causal factors, we can define policies that influence these two factors and, hence, help us lower crime rates across North Carolina.
+Our primary focus in this analysis is on two variables: `prbarr` and `prbconv`. These two variables, the probability of arrest and the probability of conviction respectively, have relatively high correlation with crime rate and have potential to be influenced by political action. We will try to understand how probability of arrest `prbarr` and probability of conviction `prbconv` impact crime rate. If they are strong causal factors, we can define policies that influence these two factors and, hence, help us lower crime rates across North Carolina.
 
-Earlier in this report, we hypothesised that these two variables will have a negative impact on our dependent variable: the higher the probabilities of arrest and conviction, the lower the crime rate. Before building a model with these two variables, however, we want to make a case of including two more variables in our first model: `density` and `west`.
+Earlier in this report, we hypothesised that these two variables would have a negative impact on our dependent variable: the higher the probabilities of arrest and conviction, the lower the crime rate. Before building a model with these two variables, however, we want to make a case of including two more variables in our first model: `density` and `west`.
 
 First, let’s consider crime rate by region (we recoded the third region as "other" for analysis purposes):
 
@@ -350,7 +350,7 @@ aggregate(density ~ region, data = crime, mean)
 
 Our first model contains four variables: `density`, `west`, `prbarr`, `prbconv`.
 
-However, first, since the two probability variables are on the scale from 0 and 1 (except the outliers), we will multiply them both by 100 to change the scale to 0 to 100. This will allow the interpretation to be: the percent change in crime rate per one point change in probability.
+However, first, since the two probability variables are on the scale from 0 and 1 (except the outliers), we will multiply them both by 100 to change the scale to 0 to 100. This will allow the interpretation to be the percent change in crime rate per one point change in probability.
 
 ```{r}
 crime$prbarr_imp100 <- 100*crime$prbarr_imp
@@ -384,7 +384,7 @@ kable(coef1, booktabs = TRUE) %>%
       column_spec(3, width = "35em")
 ```
 
-Our model is consistent with our initial hypothesis: both probability variables have a negative impact on crime rate. Moreover, a one-point change in probability of arrest has almost three times larger impact on crime rate than one-point change in probability of conviction. This confirms our hypothesis that probability of arrest has a stronger effect on crime rate because it's closer to the act of crime (being arrested is easier to relate to than being convicted).
+Our model is consistent with our initial hypothesis: both probability variables have a negative impact on crime rate. Moreover, a one-point change in probability of arrest has almost three times more impact on crime rate than a one-point change in probability of conviction. This confirms our hypothesis that probability of arrest has a stronger effect on crime rate because it's closer to the act of a crime (being arrested is easier to relate to than being convicted).
 
 The adjusted $R^2$ for this model is 67.2%:
 
@@ -398,14 +398,14 @@ All of the coefficients are highly statistically significant when we look at het
 coeftest(model1, vcov = vcovHC, level = 0.05)
 ```
 
-**Note**: we will analyze the residuals later on, after we develop all three models.
+**Note**: we will analyze the residuals later on, after developing all three models.
 
 ### Model #2
 
 We tested most of other variables in the dataset that potentially could be related to crime rate (using correlations). At the end we decided to add the following variables: `polpc`, `pctmin80`, and an interaction of `west` and `polpc`.
 Police per capita is not only highly correlated with crime rate, but it does seem to have a direct link to crime. What we see from correlation analysis is counter-intuitive at first glance: the higher police per capita, the higher crime rate. Logically, we would expect that increasing police presence would decrease crime rate over time. However, this dataset is panel data at one moment in time, not a time series. Hence, counties with higher crime per capita require more police presence. Therefore, this variable is necessary for control purposes and it improves the fit of the model.
 
-Percent minorities also helps with model fit. It is hard to hypothesize why correlation with crime rate is positive. Do poorer counties have larger minority populations? In this case, personal income would be a confounding variable that we don’t have. Or counties with more minorities have more gangs (on the ethnic basis)? This would also be a confounding variable. In any case, percent minorities will be used as representative of omitted factors.
+The percent of minorities also helps with model fit. It is hard to hypothesize why correlation with crime rate is positive. Do poorer counties have larger minority populations? In this case, personal income would be a confounding variable that we don’t have. Or do counties with more minorities have more gangs? This would also be a confounding variable. In any case, percent minorities will be used as representative of omitted factors.
 
 Before adding these variables, though, we decided to transform the `polpc` variable by taking its log. We perform this transformation for two reasons: there is a stronger correlation between the log of police per capita and the log of the crime rate variable than that of the raw values or of the log of the crime rate and the raw police per capita. This tells us that there is a better correlation between percent changes in the two variables than the raw changes. Performing this transformation also improves the quality of our regression model. The transformation is performed here:
 
@@ -492,7 +492,7 @@ kable(coef2, booktabs = TRUE) %>%
       column_spec(3, width = "35em")
 ```
 
-The interaction term (`west:polpc_imp.ln`) is harder to interpret. It applies only to the West region. That means that `polpc_imp.ln` coefficient of 0.636 applies only to Central and Other regions. In the West the coefficient for `polpc_imp.ln` is actually 0.0064 (0.6360 - 0.6296) or per each percent change in police per capita in the West, there is only 0.0064% change in crime rate. This value is close to zero and implies no significant relationship between two variables in that region. This is supported by correlations we examined earlier in this section.
+The interaction term (`west:polpc_imp.ln`) is harder to interpret. It applies only to the West region. That means that the `polpc_imp.ln` coefficient of 0.636 applies only to Central and Other regions. In the West the coefficient for `polpc_imp.ln` is actually 0.0064 (0.6360 - 0.6296) or per each percent change in police per capita in the West, there is only a 0.0064% change in crime rate. This value is close to zero and implies no practically significant relationship between the two variables in that region. This is supported by correlations we examined earlier in this section.
 
 As for the `west` coefficient, it also cannot be interpreted in isolation because setting `polpc_imp.ln` to zero does not make practical sense. If on the other hand, we use the mean of `polpc_imp.ln` for the West region then the partial effect for `west` is as follows:
 
@@ -568,7 +568,7 @@ stargazer(model1, model2, model3,
 
 ### Residual Analysis
 
-From the first plot (residuals vs. fitted values), it is evident that there are some instances with very low and very high crime rates that make residuals deviate from 0. Interestingly enough, observation #51 still appears as an outlier (that's where we recoded $polpc$ and $prbarr$). It might be that this observation needs to be excluded from the anlaysis in future itirations. 
+From the first plot (residuals vs. fitted values), it is evident that there are some instances with very low and very high crime rates that make residuals deviate from 0. Interestingly enough, observation #51 still appears as an outlier (that's where we recoded $polpc$ and $prbarr$). It might be that this observation needs to be excluded from the anlaysis in future iterations. 
 
 ```{r, fig.height = 3, fig.width = 7, fig.align="center"}
 par(mar=c(2,4,2,0))
@@ -579,7 +579,7 @@ plot(model2, which = 1, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 2:\nResiduals vs. Fitted", caption = "")
 ```
 
-Similar findings apply to Normal Q-Q plot below. However, most significant deviation from normality is observed for counties with high crime rates in model #2. This pattern is not as evident in model #1. Hence, more investigation need to go into which variables in model #2 contribute to this deviation.
+Similar findings apply to the Normal Q-Q plot below. The most significant deviation from normality, however, is observed for counties with high crime rates in model #2. This pattern is not as evident in model #1. Hence, more investigation is needed to determine which variables in model #2 contribute to this deviation.
 
 ```{r, fig.height = 3, fig.width = 7, fig.align="center"}
 par(mar=c(2,4,2,0))
@@ -590,7 +590,7 @@ plot(model2, which = 2, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 2:\nNormal Q-Q", caption = "")
 ```
 
-In Scale-Location plot, again observation #51 is causing some heteroskedasticity in residuals for model #2. In model #1 standard deviation of residuals, on the other hand, looks constant.
+In the Scale-Location plot, again observation #51 is causing some heteroskedasticity in residuals for model #2. In model #1 standard deviation of residuals, on the other hand, looks constant.
 
 ```{r, fig.height = 3, fig.width = 7, fig.align="center"}
 par(mar=c(2,4,2,0))
@@ -601,7 +601,7 @@ plot(model2, which = 3, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 2:\nScale-Location", caption = "")
 ```
 
-However, none of the observations stands out as an outlier, even #51 in the Leverage charts below.
+However, none of the observations stand out as outliers, even #51 in the Leverage charts below.
 
 ```{r, fig.height = 3, fig.width = 7, fig.align="center"}
 par(mar=c(2,4,2,0))
@@ -612,7 +612,7 @@ plot(model2, which = 5, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 2:\nResiduals vs. Leverage", caption = "")
 ```
 
-Our dataset contains more than 30 observations (91 to be precise). Hence, we can apply CLT to its residuals and assume they are normal. However, we still investigate the histograms for model #1 and #2 below. Both of them do not resemble normal distribution particularly well. 
+Our dataset contains more than 30 observations (91 to be precise), so we can apply CLT to its residuals and assume they are normal. We still investigate the histograms for model #1 and #2 below. Neither of them fit into the normal distribution particularly well. 
 
 ```{r, fig.height = 3, fig.width = 5, fig.align="center"}
 par(mar=c(2,4,2,0))
@@ -637,33 +637,33 @@ The presence of drug and alcohol problems in a community is a significant contri
 
 ### Unreported crime
 
-The stigma of some crimes for victims within a community, the feeling that nothing will be done to catch the perpetrators or perhaps vigilante justice may lead to crimes in some areas being under reported. Sexual assaults specifically can be difficult for victims to report for fear of community isolation or reprisals in smaller communities. The presence of gangs, undocumented immigrants or local judicial services being overwhelmed and unavailable may be a cause in some more urban areas. The presence of unreported crimes will impact the probability of arrest as the total number of crimes that have occured is understated.
+The stigma of some crimes for victims within a community, the feeling that nothing will be done to catch the perpetrators (or perhaps vigilante justice) may lead to crimes in some areas being under-reported. Sexual assaults specifically can be difficult for victims to report for fear of community isolation or reprisals in smaller communities. The presence of gangs, undocumented immigrants or local judicial services being overwhelmed and unavailable may be a cause in some more urban areas. The presence of unreported crimes will impact the probability of arrest as the total number of crimes that have occured is understated.
 
 ### Recidivism
 
-There have been several studies that suggest that someone who has committed a crime in the past is more likely to commit crimes in the future[^1]. The proportion of people with prior convictions in a county could be an additional driver that would impact crime rates. It is unclear where this may bias, but is unlikely to be in the most affluent areas with the higher wages and taxes per capita. Were that to be the case, the absence of a population with prior convictions in wealthy areas may artificially lower coefficients for tax per capita or the weekly wages vs crime rate.
+There have been several studies that suggest that someone who has committed a crime in the past is more likely to commit crimes in the future[^1]. The proportion of people with prior convictions in a county could be an additional driver that would impact crime rates. It is unclear where this bias may have the strongest effect, but is unlikely to be in the most affluent areas with the higher wages and taxes per capita. Were that to be the case, the absence of a population with prior convictions in wealthy areas may artificially lower coefficients for tax per capita or the weekly wages vs. crime rate.
 
 [^1]: The Offending, Crime and Justice Survey (2003); RECIDIVISM AMONG FEDERAL OFFENDERS: A COMPREHENSIVE OVERVIEW
 
 ### Unemployment levels
 
-The employment levels in a county is likely to have an impact on crime rates. Unemployment is usually higher in the young and minorities. The higher positive coefficients of percent minority variable in our models will include some amount of bias from the impact of unemployment which will prove a problem to the model. 
+The employment levels in a county is likely to have an impact on crime rate. Unemployment is usually higher in the young and minorities. The higher positive coefficients of percent minority variable in our models will include some amount of bias from the impact of unemployment which will prove a problem to the model. 
 
 ### Education levels
 
-The level of education in a county could be an indicator of some crimes. There may be covariance between lower levels of education and lower wages, along with unemployment. Rural areas, with less density, and some inner city areas may have populations that are less well educated resulting in a complex impact accross the state which will be hard to predict without data
+The level of education in a county could be an indicator of some crimes. There may be covariance between lower levels of education and lower wages, along with unemployment. Rural areas, with less density, and some inner city areas may have populations that are less educated, resulting in a complex impact accross the state which will be hard to predict without data.
 
 ### Strength of community
 
-Strong community ties, generally in rural areas, can have a suppressing effect on crime. This is a counter-weight to education levels and unemployment, both of which may be higher in such communities. This is not necessarily in all areas of low population as there are areas, on the outer banks, where many second homes are located and which can be victim to burglury and theft. The strength of community can also cause crimes to be unreported and dealt with through informal means. This is another complex factor, but would be expected to explain part of the coefficient for density meaning density would be biased and negativly impacting models
+Strong community ties, generally in rural areas, can have a suppressing effect on crime. This is a counter-weight to education levels and unemployment, both of which may be higher in such communities. This is not necessarily in all areas of low population as there are areas, on the outer banks, where many second homes are located and which can be victim to burglury and theft. The strength of community can also cause crimes to be unreported and dealt with through informal means. This is another complex factor, but would be expected to explain part of the coefficient for density meaning density would be biased and would negatively impact models.
 
 ### Income inequality
 
-Local inequality of wealth can be a driver of crime. Regardless of average wages, and if wages are generally high, if there are disparities in the distribution amongst the population, crimes will tend to increase. This is likely to impact higher density areas, as the population is greater and the the probability of disparities exist. Therefore, this is another factor that would detrimentally impact the density coefficient in models
+Local inequality of wealth can be a driver of crime. Regardless of average wages, if wages are generally high, if there are disparities in the distribution amongst the population, crimes will tend to increase. This is likely to impact higher density areas, as the population is greater and the the probability of disparities exist. Therefore, this is another factor that would detrimentally impact the density coefficient in models.
 
 ## Conclusion
 
-Through our regression analysis, it is apparent that there are aspects of the criminal justice system that could be leveraged in the short term to decrease crime throughout North Carolina: increasing the probability of arrest for committing a crime and increasing the probability of conviction once arrested. Even single percentage increases in those areas can have a substantial impact on the number of crimes committed. We hypothesize that this is due to a general feeling within a population about whether or not you will get caught for committing a crime, and whether or not you will get convicted after getting caught. In short, the higher the number of arrests and convictions, the greater the fear is of getting caught, and fewer crimes are committed. Since judges are elected in North Carolina, campaigns can be formulated to attempt elect judges that are hard on crime and have higher precedent of conviction. Police training could also be implemented or campaigned for to increase the number of arrests in counties where things have gotten somewhat lax. More research is necessary to determine what is most appropriate in terms of training and implementation.
+Through our regression analysis, it is apparent that there are aspects of the criminal justice system that could be leveraged in the short term to decrease crime throughout North Carolina: increasing the probability of arrest for committing a crime and increasing the probability of conviction once arrested. Even single percentage increases in those areas can have a substantial impact on the number of crimes committed. We hypothesize that this is due to a general feeling within a population about whether or not you will get caught for committing a crime, and whether or not you will get convicted after getting caught. In short, the higher the number of arrests and convictions, the greater the fear is of getting caught, and the fewer the crimes that are committed. Since judges are elected in North Carolina, campaigns can be formulated to attempt to elect judges that are hard on crime and have higher precedent of conviction. Police training could also be implemented or campaigned for to increase the number of arrests in counties where things have gotten somewhat lax. More research is necessary to determine what is most appropriate in terms of training and implementation.
 
 Besides arrests and convictions, it is apparent that counties with higher density populations and higher percentages of minorities are prone to greater amounts of crime. Additional research is needed to determine why there is more crime in communities with higher minority populations, but this could very well be due to poverty and/or gangs. Further research into crime amongst minority groups would likely unearth much useful information that could be used to inform additional policies to help decrease crime in these areas.
 
