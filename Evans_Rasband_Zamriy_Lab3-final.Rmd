@@ -17,7 +17,7 @@ options(knitr.table.format = "latex")
 # install.packages("viridisLite")
 # install.packages("viridis")
 # install.packages("Hmisc")
-# install.packages("kableExtra")
+#install.packages("kableExtra")
 # install.packages("car")
 # install.packages("lmtest")
 # install.packages("sandwich")
@@ -106,13 +106,13 @@ boxplot(crime$wser, cex.main = 0.6, cex.lab = 0.6, cex.axis = 0.6,
         ylab = "Wage in $")
 ```
 
-This one value is not only over over 9 standard deviations from the mean (as seen below) of wser wages, but greater than any other weekly wage value in the state.
+This one value is not only over over 9 standard deviations from the mean (as seen below) of wser wages, but greater than any other weekly wage value in the state.  This outlier may be an effect of the metric.  The data does not provide a number of employees in each sector, and therefore it is impossible to compare these figures effecivly.  This service business may be small, niche, highly paid staff such as a investment bank, and in a county with few other service industries, driving this sectors wages up.  It is also not clear if this is the county where the wage is earned or the counter where the wage earner lives.   The value is clearly not representative of the North Carolina population, however, and will be removed from our models
 
 ```{r}
  (max(crime$wser) - mean(crime$wser)) / sd(crime$wser)
 ```
 
-The observation will need to be maintained, and therefore only the service weekly wage value will be replaced by an imputed value.
+Only the service weekly wage value will be replaced by an imputed value; the rest of the observation will need to be maintained
 
 The result of a predictive model using the total of average weekly wages, with which the wages of the service sector are strongly correlated, is \$211 per week. This is not dissimilar from the mean of \$254 per week and therefore use of the mean as an imputed value is reasonable and simple. A new variable `wser_imp` is populated so that we do not lose the original values.
 
@@ -135,7 +135,7 @@ geom_smooth(method = "lm", se = FALSE) +
   ggtitle("Police per Capita vs. Crime Rate by Region")
 ```
 
-It is clear that the impact of this observation is significant to the trend of police per capita on crime rate. And, while perhaps possible, it is not representative of the rest of the population. Additionally, according to governing.com[^1], police per population in Washington DC (where the highest concentration of police force might be expected) is 0.0065, significantly lower than this outlier.
+It is clear that the impact of this observation is significant to the trend of police per capita on crime rate. There may be a valid reason for so many police per capita in one specific county, but as it is not representative of the rest of the population it will be removed. Additionally, according to governing.com[^1], police per population in Washington DC (where the highest concentration of police force might be expected) is 0.0065, which is still a lot fewer than this outlier.  
 
 [^1]: http://www.governing.com/gov-data/safety-justice/law-enforcement-police-department-employee-totals-for-cities.html
 
@@ -183,7 +183,7 @@ summary(crime$prbarr)
 summary(crime$prbarr_imp)
 ```
 
-Though other variables appear to have exceptional values or outliers (particularly probability of arrest and the percent young male), none are as clear. These outliers will be addressed during the development of the models as appropriate and with due consideration for the practical significance and the leverage and influence they have on the models developed.
+Though other variables appear to have exceptional values or outliers (particularly probability of arrest and the percent young male), none are as clear. These outliers will be addressed during the development of the models as appropriate and with due consideration for the practical significance and the leverage and influence they have on the models developed
 
 ### Correlations
 
@@ -228,7 +228,10 @@ Based on the above matrix a few important patterns have been identified:
 
 ### Summary of variables
 
-The table below summarizes all variables in the dataset, and includes the expected impact of each on the dependent variable, crime rate, along with the actual correlation. Also included, as a framework for the analysis, is an assessment of the rapidity at which policy could be enacted and be effective. The support and lobbying for judges with perspectives that would support policies relating to custodial terms and their length, could be implemented quickly. However developing incentives and strategies to reduce population density, for example, will take a longer time to generate results.
+The table below summarizes all variables in the dataset, and includes the expected impact of each on the dependent variable, crime rate, along with the actual correlation. Also included, as a framework for the analysis, is an assessment of the rapidity at which policy could be enacted and be effective. 
+- Short term policy impact are policies that could be implemented quickly, within the months preceeding and immedietly after an election. The support and lobbying for judges with perspectives that would support policies relating to custodial terms and their length,for example. 
+- Medium term policies are those that take some planning and financing, but which can be implemented and results demonstrated during an electoral term.  This may include recruiting and training police officers, or upgrades of crime investigation equipment.
+- Long term policies would be those needing sustained effort or funding, and results will be outside of the duration of a single term.  These may be developing incentives and strategies to reduce population density 
 
 ```{r, echo = TRUE}
 var_labels <- c("crimes committed per person", "probability of arrest",
@@ -630,36 +633,101 @@ hist(model2$residuals,
 Overall, the residual analysis showed that our models have some issues with fitting certain values of crime rate (on the high end). Also, we can see some heteroskedasticity in residuals caused by a few observations. Further investigation will be conducted to analyze the reasons and potentially remove them.
 
 ## Omitted Variable Analysis
+```{r}
+omv_items <- c(
+  "Drug and alcohol abuse levels", "Unreported crime", "Recidivism", "Unemployment levels", "Education levels", "Strength of community", "Income inequality"
+)
 
-### Drug and alcohol abuse levels
+omv_desc <- c(
+  "The presence of drug and alcohol problems in a community is a significant 
+  contributing factor to crime rates in many areas.", 
+  "The stigma of some crimes for victims within a community, the feeling that nothing will
+  be done to catch the perpetrators (or perhaps vigilante justice) may lead to crimes in 
+  some areas being under-reported. Sexual assaults specifically can be difficult for 
+  victims to report for fear of social isolation or reprisals in smaller communities. 
+  The presence of gangs, undocumented immigrants, those poor and uninsured or
+  local judicial services being overwhelmed and unavailable may be a cause in 
+  some more urban areas",
+  "There have been several studies that suggest that someone who has committed a crime 
+  in the past is more likely to commit crimes in the future[^1]. The proportion of people 
+  with prior convictions in a county could be an additional driver that would impact 
+  crime rate", 
+  "The employment levels in a county is likely to have an impact on crime rate", 
+  "The level of education in a county could be an indicator of some crimes", 
+  "Strong community ties, generally in rural areas, can have a suppressing effect on crime.
+  This is a counter-weight to education levels and unemployment, both of which may be higher 
+  in such communities. This is not necessarily in all areas of low population as there are
+  areas, on the outer banks, where many second homes are located and which can be victim to
+  burglury and theft. The strength of community can also cause crimes to be unreported and
+  dealt with through informal means", 
+  "Inequality of wealth can be a driver of crime. Regardless of average wage value, if the
+  difference in wages are generally high, i.e. if there are disparities in the distribution
+  amongst the population, crimes will tend to increase"
+)
 
-The presence of drug and alcohol problems in a community is a significant contributing factor to crime rates in many areas. There is an expectation that less affluent communities in urban areas would be most impacted, which may explain some of the higher rates of crime in higher density populated counties and bias the coefficients of density in our model. These coefficients may have factors related to drug and alcohol abuse included in them.
+omv_inf <- c(
+  "There is an expectation that less affluent communities in urban areas would be most
+  impacted, which may explain some of the higher rates of crime in higher density populated
+  counties and bias the coefficient of 'density' in our model.  However, we have not
+  reccomended policy decisions base on density, therefore no impact on conclusions", 
+  "May impact rural areas and pockets of urban areas with impacts that would lower those
+  coefficients.  Additionally, the greater the police presence, the more likely crimes are 
+  to be reported which may be artificially increasing crimes recorded in heavily policed 
+  areas.  While our model does include the policeing per capita, no policy decisions 
+  are based upon it",
+  "It is unclear where this bias may have the strongest effect, but is unlikely to be in 
+  the most affluent areas with the higher wages and taxes per capita.  If so, this could 
+  be artifically raising the coefficient of such variable. As these variables are not
+  included in the model, this will not impact policy recomendations but may be a factor 
+  to consider in further study",
+  "Unemployment is usually higher in the young and minorities. The higher positive 
+  coefficients of percent minority variable in our models will include some amount of bias 
+  from the impact of unemployment which should be considered where policies include 
+  this factor", 
+  "There may be covariance between lower levels of education and lower wages, along
+  with unemployment. It is likely to have in impact on tax per capita or the lower wages
+  number, neither of have been included in the model",
+  "This is another complex factor, but would be expected to explain part of the coefficient 
+  for population density meaning density, negatively impact models, making the density
+  coefficient less positive",
+  "This is likely to impact higher density areas, as the population is greater and the
+  probability of disparities existing is higher. Therefore, this is another factor that 
+  would detrimentally impact the density coefficient in models"
+    
+)
 
-### Unreported crime
+omv_proxy <- c(
+  "None available in this dataset, but arrests for drug specific criems are likely to 
+  be available, and deaths caused by drugs are captured by the CDC",
+  "While police presence may be an indicator of liklihood that offences are reported, 
+  it would not be a strong proxy. Assessing numbers of groups least likely to report crime 
+  may help (undocumented migrants, uninsured property, counties with high case backlog)",
+  "Use of one of the economic variables may act as proxy, but there will be a lot of other 
+  variable impact in there also.",
+  "A combination of young male and minority may be used as a proxy, however this may 
+  miss pockets of unemployment in other demographics.  Additionally, young males may 
+  be university students in certain counties",
+  "Use of tax per capita is possible, but may also reflect the underlying wage arbitrage in 
+  a county.  Its also not clear what tax this relates to and may be unreliable as
+  an income predictor",
+  "A good proxy is not clearly available in this dataset, and may be hard to identify in 
+  general.  Data on church attendance may be useful, as could membership or attendants of 
+  other civic societies", 
+  "Having made efforts to use the wages in different sectors to understand disparities, this
+  was not deemed practical, given the limitations in the understanding of this data as 
+  outlined in the EDA.  Some more detailed tax information within the county population may
+  useful to generate some understanding into this factor"
+)
+omv_table <- data.frame("Omitted Variable" = omv_items,
+                    "Description" = omv_desc, "Inference" = onv_inf, 
+                    "Proxy Availability" = omv_proxy)
 
-The stigma of some crimes for victims within a community, the feeling that nothing will be done to catch the perpetrators (or perhaps vigilante justice) may lead to crimes in some areas being under-reported. Sexual assaults specifically can be difficult for victims to report for fear of community isolation or reprisals in smaller communities. The presence of gangs, undocumented immigrants or local judicial services being overwhelmed and unavailable may be a cause in some more urban areas. The presence of unreported crimes will impact the probability of arrest as the total number of crimes that have occured is understated.
-
-### Recidivism
-
-There have been several studies that suggest that someone who has committed a crime in the past is more likely to commit crimes in the future[^1]. The proportion of people with prior convictions in a county could be an additional driver that would impact crime rates. It is unclear where this bias may have the strongest effect, but is unlikely to be in the most affluent areas with the higher wages and taxes per capita. Were that to be the case, the absence of a population with prior convictions in wealthy areas may artificially lower coefficients for tax per capita or the weekly wages vs. crime rate.
-
+kable(coef2, booktabs = TRUE) %>%
+  kable_styling(font_size = 8, full_width = FALSE) %>%
+      column_spec(4, width = "35em")
+```
 [^1]: The Offending, Crime and Justice Survey (2003); RECIDIVISM AMONG FEDERAL OFFENDERS: A COMPREHENSIVE OVERVIEW
 
-### Unemployment levels
-
-The employment levels in a county is likely to have an impact on crime rate. Unemployment is usually higher in the young and minorities. The higher positive coefficients of percent minority variable in our models will include some amount of bias from the impact of unemployment which will prove a problem to the model. 
-
-### Education levels
-
-The level of education in a county could be an indicator of some crimes. There may be covariance between lower levels of education and lower wages, along with unemployment. Rural areas, with less density, and some inner city areas may have populations that are less educated, resulting in a complex impact accross the state which will be hard to predict without data.
-
-### Strength of community
-
-Strong community ties, generally in rural areas, can have a suppressing effect on crime. This is a counter-weight to education levels and unemployment, both of which may be higher in such communities. This is not necessarily in all areas of low population as there are areas, on the outer banks, where many second homes are located and which can be victim to burglury and theft. The strength of community can also cause crimes to be unreported and dealt with through informal means. This is another complex factor, but would be expected to explain part of the coefficient for density meaning density would be biased and would negatively impact models.
-
-### Income inequality
-
-Local inequality of wealth can be a driver of crime. Regardless of average wages, if wages are generally high, if there are disparities in the distribution amongst the population, crimes will tend to increase. This is likely to impact higher density areas, as the population is greater and the the probability of disparities exist. Therefore, this is another factor that would detrimentally impact the density coefficient in models.
 
 ## Conclusion
 
@@ -668,3 +736,11 @@ Through our regression analysis, it is apparent that there are aspects of the cr
 Besides arrests and convictions, it is apparent that counties with higher density populations and higher percentages of minorities are prone to greater amounts of crime. Additional research is needed to determine why there is more crime in communities with higher minority populations, but this could very well be due to poverty and/or gangs. Further research into crime amongst minority groups would likely unearth much useful information that could be used to inform additional policies to help decrease crime in these areas.
 
 Lastly, due to the high number of omitted variables that are highly relevant to levels of crime, we recommend further research in order to uncover other factors that could be leveraged to decrease crime throughout North Carolina.
+
+
+_just a note_
+_The Sixth Amendment to the United States Constitution and Article I, Section 24, of
+the North Carolina Constitution provide a person charged with a crime the right to a
+trial by a jury. All criminal trials in the superior court are by a jury; the North Carolina
+Constitution does not allow a judge to decide a criminal defendant’s guilt or innocence
+at trial in superior court_
