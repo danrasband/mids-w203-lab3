@@ -62,6 +62,28 @@ crime <- na.omit(crime)
 
 Counties range in population numbers from 15,000 people to over 1 million. The data provided has many abstracted values such as ratios and averages, but without the actual numbers relating to those abstractions, it can be hard to draw practical significance from conclusions as each county will be considered equal to any other. As electoral representation in general does not follow population density, there may be advantages to analyzing data at a county level only, but this limitation should be considered depending on the inference that is being generated.
 
+After additional investigation, it appeared that there is duplicate record in this dataset:
+
+```{r}
+nrow(crime)
+length(unique(crime$county))
+```
+
+The county #193 has two identical rows in the dataset:
+
+```{r}
+crime[duplicated(crime$county),"county"]
+```
+
+We will remove one of the rows:
+
+```{r}
+crime <- crime[!duplicated(crime),]
+dim(crime)
+```
+
+As a result our final dataset contains 90 observations and 25 variables.
+
 From the summary, the probability of conviction dimension, `prbconv`, needed to be transformed to a more appropriate data type in R:
 
 ```{r}
@@ -163,7 +185,7 @@ ggplot(crime, aes(polpc, prbarr)) +
                 "Probability of Arrest", sep = "\n"))
 ```
 
-The unrepresentativeness of these outliers can be demonstrated when correlation between two variables is compared. The correlation changes from positive to negative if the observation with the outlier is excluded:
+The unrepresentativeness of these outliers can be demonstrated when correlation between two variables is compared. The correlation changes from positive to negative if the observation #51 with the outlier is excluded:
 
 ```{r}
 cat("Correlation with the outlier inlcuded:",
@@ -181,6 +203,19 @@ crime$prbarr_imp <-
          crime$prbarr)
 summary(crime$prbarr)
 summary(crime$prbarr_imp)
+```
+
+An additional data issue was identified for a county where both _west_ and _central_ variables are equal to 1:
+
+```{r}
+table(crime$west, crime$central)
+```
+
+Is it possible that this county (#71) belongs to two regions? Unfortunately, we don't have enough information to answer this question. Moreover, we investigated this county and compared it to the averages of all variables for $west = 1$, $central=1$ and $west=central=0$. The available characteristics of this county did not make it obvious where this county belongs. However, we do not want to exclude it entire from our analysis as it seems like a valid data point in all other respects. Hence, we'll create a flag variable that will allow us to exclude it if necessary.
+
+```{r}
+crime$exclude <- ifelse(crime$county %in% c(71), 1, 0)
+table(crime$exclude)
 ```
 
 Though other variables appear to have exceptional values or outliers (particularly probability of arrest and the percent young male), none are as clear. These outliers will be addressed during the development of the models as appropriate and with due consideration for the practical significance and the leverage and influence they have on the models developed
@@ -367,6 +402,7 @@ model1.formula <- as.formula(paste("log(crmrte) ~",
                                    paste(model1.ind_vars, collapse = " + "),
                                    sep = " "))
 model1 <- lm(model1.formula, data = crime)
+model1a <- lm(model1.formula, data = crime[crime$exclude == 0,])
 ```
 
 ```{r, echo = TRUE}
@@ -401,7 +437,18 @@ All of the coefficients are highly statistically significant when we look at het
 coeftest(model1, vcov = vcovHC, level = 0.05)
 ```
 
-**Note**: we will analyze the residuals later on, after developing all three models.
+One last check is to compare model results for the full dataset and for the one excluding count #71 (where $west=central=1$):
+
+```{r}
+compare1 <- data.frame(cbind(round(coeftest(model1, vcov = vcovHC, level = 0.05)[,1],4),
+                             round(coeftest(model1a, vcov = vcovHC, level = 0.05)[,1],4),
+                             round(coeftest(model1, vcov = vcovHC, level = 0.05)[,3],1),
+                             round(coeftest(model1a, vcov = vcovHC, level = 0.05)[,3],1)))
+colnames(compare1) <- c("Est. w/ #71", "Est. w/o #71", "t.val w/ #71", "t.val w/o #71")
+compare1
+```
+
+As we can see, there is a slight change in the coefficient for $west$. However, this change is less than 3%. Hence, we can conclude that this county doesn't change our results and we will keep it in.
 
 ### Model #2
 
@@ -635,31 +682,31 @@ Overall, the residual analysis showed that our models have some issues with fitt
 ## Omitted Variable Analysis
 ```{r}
 omv_items <- c(
-  "Drug and alcohol abuse levels", "Unreported crime", "Recidivism", "Unemployment levels", "Education levels", "Strength of community", "Income inequality"
+  "Drug and alcohol abuse levels","", "Unreported crime", "", "Recidivism", "", "Unemployment levels", "", "Education levels", "", "Strength of community", "", "Income inequality"
 )
 
 omv_desc <- c(
   "The presence of drug and alcohol problems in a community is a significant 
-  contributing factor to crime rates in many areas.", 
+  contributing factor to crime rates in many areas.", "",
   "The stigma of some crimes for victims within a community, the feeling that nothing will
   be done to catch the perpetrators (or perhaps vigilante justice) may lead to crimes in 
   some areas being under-reported. Sexual assaults specifically can be difficult for 
   victims to report for fear of social isolation or reprisals in smaller communities. 
   The presence of gangs, undocumented immigrants, those poor and uninsured or
   local judicial services being overwhelmed and unavailable may be a cause in 
-  some more urban areas",
+  some more urban areas", "",
   "There have been several studies that suggest that someone who has committed a crime 
   in the past is more likely to commit crimes in the future[^1]. The proportion of people 
   with prior convictions in a county could be an additional driver that would impact 
-  crime rate", 
-  "The employment levels in a county is likely to have an impact on crime rate", 
-  "The level of education in a county could be an indicator of some crimes", 
+  crime rate", "",
+  "The employment levels in a county is likely to have an impact on crime rate", "",
+  "The level of education in a county could be an indicator of some crimes", "",
   "Strong community ties, generally in rural areas, can have a suppressing effect on crime.
   This is a counter-weight to education levels and unemployment, both of which may be higher 
   in such communities. This is not necessarily in all areas of low population as there are
   areas, on the outer banks, where many second homes are located and which can be victim to
   burglury and theft. The strength of community can also cause crimes to be unreported and
-  dealt with through informal means", 
+  dealt with through informal means", "",
   "Inequality of wealth can be a driver of crime. Regardless of average wage value, if the
   difference in wages are generally high, i.e. if there are disparities in the distribution
   amongst the population, crimes will tend to increase"
@@ -669,27 +716,27 @@ omv_inf <- c(
   "There is an expectation that less affluent communities in urban areas would be most
   impacted, which may explain some of the higher rates of crime in higher density populated
   counties and bias the coefficient of 'density' in our model.  However, we have not
-  reccomended policy decisions base on density, therefore no impact on conclusions", 
+  reccomended policy decisions base on density, therefore no impact on conclusions", "",
   "May impact rural areas and pockets of urban areas with impacts that would lower those
   coefficients.  Additionally, the greater the police presence, the more likely crimes are 
   to be reported which may be artificially increasing crimes recorded in heavily policed 
   areas.  While our model does include the policeing per capita, no policy decisions 
-  are based upon it",
+  are based upon it","",
   "It is unclear where this bias may have the strongest effect, but is unlikely to be in 
   the most affluent areas with the higher wages and taxes per capita.  If so, this could 
   be artifically raising the coefficient of such variable. As these variables are not
   included in the model, this will not impact policy recomendations but may be a factor 
-  to consider in further study",
+  to consider in further study","",
   "Unemployment is usually higher in the young and minorities. The higher positive 
   coefficients of percent minority variable in our models will include some amount of bias 
   from the impact of unemployment which should be considered where policies include 
-  this factor", 
+  this factor", "",
   "There may be covariance between lower levels of education and lower wages, along
   with unemployment. It is likely to have in impact on tax per capita or the lower wages
-  number, neither of have been included in the model",
+  number, neither of have been included in the model","",
   "This is another complex factor, but would be expected to explain part of the coefficient 
   for population density meaning density, negatively impact models, making the density
-  coefficient less positive",
+  coefficient less positive","",
   "This is likely to impact higher density areas, as the population is greater and the
   probability of disparities existing is higher. Therefore, this is another factor that 
   would detrimentally impact the density coefficient in models"
@@ -698,34 +745,42 @@ omv_inf <- c(
 
 omv_proxy <- c(
   "None available in this dataset, but arrests for drug specific criems are likely to 
-  be available, and deaths caused by drugs are captured by the CDC",
+  be available, and deaths caused by drugs are captured by the CDC", "",
   "While police presence may be an indicator of liklihood that offences are reported, 
   it would not be a strong proxy. Assessing numbers of groups least likely to report crime 
-  may help (undocumented migrants, uninsured property, counties with high case backlog)",
+  may help (undocumented migrants, uninsured property, counties with high case backlog)","",
   "Use of one of the economic variables may act as proxy, but there will be a lot of other 
-  variable impact in there also.",
+  variable impact in there also.","",
   "A combination of young male and minority may be used as a proxy, however this may 
   miss pockets of unemployment in other demographics.  Additionally, young males may 
-  be university students in certain counties",
+  be university students in certain counties","",
   "Use of tax per capita is possible, but may also reflect the underlying wage arbitrage in 
   a county.  Its also not clear what tax this relates to and may be unreliable as
-  an income predictor",
+  an income predictor","",
   "A good proxy is not clearly available in this dataset, and may be hard to identify in 
   general.  Data on church attendance may be useful, as could membership or attendants of 
-  other civic societies", 
+  other civic societies", "",
   "Having made efforts to use the wages in different sectors to understand disparities, this
   was not deemed practical, given the limitations in the understanding of this data as 
   outlined in the EDA.  Some more detailed tax information within the county population may
   useful to generate some understanding into this factor"
 )
 omv_table <- data.frame("Omitted Variable" = omv_items,
-                    "Description" = omv_desc, "Inference" = omv_inf, 
+                    "Description" = omv_desc, 
+                    "Inference" = omv_inf, 
                     "Proxy Availability" = omv_proxy)
 
-kable(coef2, booktabs = TRUE) %>%
-  kable_styling(font_size = 8, full_width = FALSE) %>%
-      column_spec(4, width = "35em")
+kable(omv_table, booktabs = TRUE) %>%
+  kable_styling(font_size = 6, 
+                full_width = TRUE) %>%
+  row_spec(0, bold = TRUE) %>%
+  column_spec(1, width = "8em") %>%
+  column_spec(2, width = "20em") %>%
+  column_spec(3, width = "20em") %>%
+  column_spec(4, width = "20em")
 ```
+
+
 [^1]: The Offending, Crime and Justice Survey (2003); RECIDIVISM AMONG FEDERAL OFFENDERS: A COMPREHENSIVE OVERVIEW
 
 
@@ -738,7 +793,7 @@ Besides arrests and convictions, it is apparent that counties with higher densit
 Lastly, due to the high number of omitted variables that are highly relevant to levels of crime, we recommend further research in order to uncover other factors that could be leveraged to decrease crime throughout North Carolina.
 
 
-_just a note_
+_Just a note:_
 _The Sixth Amendment to the United States Constitution and Article I, Section 24, of
 the North Carolina Constitution provide a person charged with a crime the right to a
 trial by a jury. All criminal trials in the superior court are by a jury; the North Carolina
