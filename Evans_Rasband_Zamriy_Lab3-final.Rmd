@@ -256,9 +256,16 @@ ggplot(data = cor_mat_upper2, aes(Var1, Var2, fill = value)) +
 
 Based on the above matrix a few important patterns have been identified:
 
- - `density` has the strongest correlation with `crmrte`. Hence, it would be one of the most important variables to test in the models.
- - All wages variables are positively correlated with each other. Hence, it would create challenges for keeping multiple variables in the model.
- - `density` has a strong negative correlation with urban indicator. This relationship is as expected. Given that `density` has higher correlation with `crmrte`, it might be enough to control for the level of urbanization in the area in our models.
+ - `density` has the strongest correlation with crime rate. It is one of the most important variables to test in the models as there are a number of factors, discussed in omitted variables, that are included in this factor.  Its impact must be considered.
+ - All wages variables are positively correlated with each other. Hence, it would create challenges for keeping multiple variables in the model.  Additionally, the understanding of the interpretation of the wages variables poses challenges, as discussed above.  More information is required before these could be transformed and utilized in any model
+ - `density` has a strong positive correlation with urban indicator. This relationship is as expected. Given that `density` has higher correlation with `crmrte`, including density will be satisfactory to control for the level of urbanization in the county in the models.
+ - The level of policing, or the police per capita, is positivly correclated with crime.  This impact is not expected as an increase in policing might logically be associated with a reduction in crime.  However, the reaction to a high crime rate would be to increase policing to help control crime and it is unclear from this single year based dataset the increase in policing is reducing the crime rate as compared to prior periods.  Furthermore, the presence of police may make it more likely to report crime, increasing the crimes reported above other counties 
+ - The Western region of the state exhibits a lower prevelance of crime per person than the other regions.  This is an interaction that may require some further investigation, but will be controled for in the models presented.  Some comparison of group means reveals a 25% difference in percent minority between the Western region and others. While this may be related to the presence of minorities, it is more likely to be the product of a bivariate relationship with a 3rd factor such as poverty.  Tax per capita is not very different from other parts of the state, but the western regions of the outer banks are attractive for retirement communities which may be driving this impact  
+
+```{r}
+pctmin_per_region <- lm(pctmin80~west, data = crime)
+(summary(pctmin_per_region)$coefficients)
+```
 
 
 ### Summary of variables
