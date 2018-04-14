@@ -719,7 +719,7 @@ omv_proxy <- c(
   useful to generate some understanding into this factor"
 )
 omv_table <- data.frame("Omitted Variable" = omv_items,
-                    "Description" = omv_desc, "Inference" = onv_inf, 
+                    "Description" = omv_desc, "Inference" = omv_inf, 
                     "Proxy Availability" = omv_proxy)
 
 kable(coef2, booktabs = TRUE) %>%
