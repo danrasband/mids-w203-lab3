@@ -572,6 +572,13 @@ All of the coefficients are statistically significant when we look at heterosked
 coeftest(model2, vcov = vcovHC, level = 0.05)
 ```
 
+Furthermore, the F-test below of 15.24 is well above the 1% critical value in the F distribution. This indicates that we can reject the null hypothesis that the additional variables added to model 2 verses model 1 (police per capita, percent minority and the interaction between the Western region and police per capita) have no effect on crime rate.
+
+```{r}
+waldtest(model2, model1, vcov = vcovHC)
+```
+
+
 ### Model #3 - All Variables
 
 Finally, our last model includes all variables, including our imputed variables. We transform all wage variables by taking their natural log. This will allow us to interpret the coefficients as elasticities instead of using absolute wage changes.
