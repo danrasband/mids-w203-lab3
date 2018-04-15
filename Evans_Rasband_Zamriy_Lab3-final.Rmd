@@ -37,13 +37,11 @@ suppressMessages(library(stargazer))
 
 ## Introduction
 
-Crime is expected to be a significant issue during the upcoming election in North Carolina. Using statistical techniques, this report attempts to provide data-driven insights into the determinants of crime in the state. A mixture of both long- and short-term policy suggestions will be included to address the factors that exacerbate crime, and to capitalize on those factors that act as suppressors.
+Crime is expected to be a significant issue during the upcoming election in North Carolina. Using statistical techniques, this report attempts to provide data-driven insights into key determinants of crime in the state. A mixture of both long- and short-term policy suggestions will be included that address the factors that exacerbate crime, and that capitalize on those factors which act as suppressors.
 
 ## Exploratory Data Analysis
 
 The data utilized to conduct this statistical analysis generally comes from the year 1987, with a single variable from 1980 (percent minority). Data is provided for most counties in North Carolina, and can be further grouped by region (West, Central and Other). Granularity below the county level is not available.
-
-While averages and rates are presented for many variables, the absolute numbers, for example of population, are not. This can generate some challenges when discussing practical significance.
 
 ### Data Cleaning
 
@@ -54,7 +52,7 @@ crime <- read.csv("crime_v2.csv", stringsAsFactors = FALSE)
 dim(crime)
 ```
 
-There are a total of 91 observations in the dataset; 6 rows are completely devoid of data and can be excluded. It should be noted that there are 100 counties in North Carolina; therefore this dataset contains data for 91% of them. It is not possible to tell if the excluded counties are randomly excluded or share specific features that may bias this data set.
+There are a total of 91 observations in the dataset; 6 rows are completely devoid of data and can be excluded. It should be noted that there are 100 counties in North Carolina; therefore this dataset contains data for 91% of them. It is not possible to tell if the excluded counties are randomly distributed or share specific features that may bias this data set.
 
 ```{r}
 crime <- na.omit(crime)
@@ -62,35 +60,35 @@ crime <- na.omit(crime)
 
 Counties range in population numbers from 15,000 people to over 1 million. The data provided has many abstracted values such as ratios and averages, but without the actual numbers relating to those abstractions, it can be hard to draw practical significance from conclusions as each county will be considered equal to any other. As electoral representation in general does not follow population density, there may be advantages to analyzing data at a county level only, but this limitation should be considered depending on the inference that is being generated.
 
-After additional investigation, it appeared that there is duplicate record in this dataset:
+There is a duplicate record in this dataset   
 
 ```{r}
 nrow(crime)
 length(unique(crime$county))
 ```
 
-The county #193 has two identical rows in the dataset:
+Obeservation 91 and 90 are both for county 193
 
 ```{r}
 crime[duplicated(crime$county),"county"]
 ```
 
-We will remove one of the rows:
+One of these rows will be removed
 
 ```{r}
 crime <- crime[!duplicated(crime),]
 dim(crime)
 ```
 
-As a result our final dataset contains 90 observations and 25 variables.
+As a result the final dataset contains 90 observations and 25 variables.
 
-From the summary, the probability of conviction dimension, `prbconv`, needed to be transformed to a more appropriate data type in R:
+From the summary, the probability of conviction dimension, `prbconv`, must be transformed to a more appropriate data type in R.  The following code makes this change:
 
 ```{r}
 crime$prbconv <- as.numeric(as.character(crime$prbconv))
 ```
 
-The variables are made up of ratios, specifically the probability of arrest, conviction and prison sentence, the percent minority, young male, police and tax revenue per capita, and the ratio (mix) of face to face crimes to other types of crime. The means of several variables are provided for each county: a series of weekly wages in different business segments, and prison sentences in days. Finally, an indicator of the location of the county in the state is also provided, indicating West and Central regions. An "Other" region can be identified by difference. The `urban` variable also indicates whether the county is a “Standard Metropolitan Statistical Area.” Below is a summary of variables including some summary statistics:
+The variables are made up of several different types of number, many are interactions: Ratios, specifically the probability of arrest, conviction and prison sentence, the percent minority, young male, police and tax revenue per capita, and the ratio (mix) of face to face crimes to other types of crime. The means of several variables are provided for each county: a series of weekly wages in different business segments, and prison sentences in days. Finally, an indicator of the location of the county in the state is also provided, indicating West and Central regions. An "Other" region can be identified by difference. The `urban` variable also indicates whether the county is a “Standard Metropolitan Statistical Area.” Below is a table of variables including some summary statistics:
 
 ```{r}
 crime_summary <- data.frame(t(mapply(summary, crime)))
@@ -114,7 +112,7 @@ boxplot(crime$prbconv,
         main = "Probability of Conviction")
 ```
 
-In case of probability of arrests, there is only one observation where the value is above 1, and it is significantly higher than the next closest value. It indicates that there have been more arrests than there have been crimes in a county. As this is time-limited data covering a single year, it is possible that crimes committed in the previous year and not recorded as a 1987 crime actually generated an arrest in 1987. Similarly, convictions may also have occurred in 1987, with the arrest relating to that conviction occurring in a prior period. It is not unfeasible that convictions for prior period arrests occur as the waiting time between being charged with an offense and a court date can be lengthy. Higher rates are an indication that a county is moving faster through its backlog.
+In case of probability of arrests, there is only one observation where the value is above 1, and it is significantly higher than the next closest value. This is observation 51, which has other features that will be covered later.  It indicates that there have been more arrests than there have been crimes in a county. As this is time-limited data covering a single year, it is possible that crimes committed in the previous year and not recorded as a 1987 crime actually generated an arrest in 1987. Similarly, convictions may also have occurred in 1987, with the arrest relating to that conviction occurring in a prior period. It is not unfeasible that convictions for prior period arrests occur as the waiting time between being charged with an offense and a court date can be lengthy. Higher rates are an indication that a county is moving faster through its backlog.
 
 Additionally, the table identifies some unusual features in some of the variables, including some significant outliers. Some of these outliers clearly appear to be inconsistent with the data and will be mentioned and corrected here; others may be more subtle and will be discussed as they are considered in models. Service industry wages and police per capita will be addressed in this section.
 
@@ -127,13 +125,13 @@ boxplot(crime$wser, cex.main = 0.6, cex.lab = 0.6, cex.axis = 0.6,
         ylab = "Wage in $")
 ```
 
-This one value is not only over over 9 standard deviations from the mean (as seen below) of wser wages, but greater than any other weekly wage value in the state.  This outlier may be an effect of the metric.  The data does not provide a number of employees in each sector, and therefore it is impossible to compare these figures effecivly.  This service business may be small, niche, highly paid staff such as a investment bank, and in a county with few other service industries, driving this sectors wages up.  It is also not clear if this is the county where the wage is earned or the counter where the wage earner lives.   The value is clearly not representative of the North Carolina population, however, and will be removed from our models
+This one value is not only over over 9 standard deviations from the mean (as seen below) of wser wages, but greater than any other weekly wage value in the state.  This outlier may be an effect of the metric.  The data does not provide a number of employees in each sector, and therefore it is impossible to compare these figures effecivly.  This service business may be small, niche, and have highly paid staff such as a investment bank, and in a county with few other service industries, driving this sectors wages up.  It is also not clear if this is the county where the wage is earned or the county where the wage earner lives.   The value is clearly not representative of the North Carolina population, however, and will be removed from our models
 
 ```{r}
  (max(crime$wser) - mean(crime$wser)) / sd(crime$wser)
 ```
 
-Only the service weekly wage value will be replaced by an imputed value; the rest of the observation will need to be maintained
+Only the service weekly wage value will be replaced by an imputed value; the rest of the observation will need to be preserved
 
 The result of a predictive model using the total of average weekly wages, with which the wages of the service sector are strongly correlated, is \$211 per week. This is not dissimilar from the mean of \$254 per week and therefore use of the mean as an imputed value is reasonable and simple. A new variable `wser_imp` is populated so that we do not lose the original values.
 
@@ -186,7 +184,7 @@ ggplot(crime, aes(polpc, prbarr)) +
   theme(plot.title = element_text(size = 10))
 ```
 
-The unrepresentativeness of these outliers can be demonstrated when correlation between two variables is compared. The correlation changes from positive to negative if the observation #51 with the outlier is excluded:
+The unrepresentativeness of these outliers can be demonstrated when correlation between two variables is compared. The correlation changes from positive to negative if the observation with the outlier is excluded:
 
 ```{r}
 cat("Correlation with the outlier inlcuded:",
@@ -214,7 +212,7 @@ An additional data issue was identified for a county where both _west_ and _cent
 table(crime$west, crime$central)
 ```
 
-Is it possible that this county (#71) belongs to two regions? Unfortunately, we don't have enough information to answer this question. Moreover, we investigated this county and compared it to the averages of all variables for $west = 1$, $central=1$ and $west=central=0$. The available characteristics of this county did not make it obvious where this county belongs. However, we do not want to exclude it entire from our analysis as it seems like a valid data point in all other respects. Hence, we'll create a flag variable that will allow us to exclude it if necessary.
+It is possible that a large county may straddle the regions.  Having investigated this county and compared it to the averages of all variables for $west = 1$, $central=1$ and $west=central=0$, the available characteristics did not make it obvious in which region it belongs. However, it should not be excluded from our analysis as it appears a valid data point in all other respects. A flag variable is created that will allow it to be excluded if necessary.
 
 ```{r}
 crime$exclude <- ifelse(crime$county %in% c(71), 1, 0)
@@ -225,7 +223,7 @@ Though other variables appear to have exceptional values or outliers (particular
 
 ### Correlations
 
-To conclude our initial data exploration, an easy-to-reference correlation heatmap has been developed for quick identification of positive or negative correlations between variables in the data set.
+To conclude the initial data exploration, an easy-to-reference correlation heatmap has been developed for quick identification of positive or negative correlations between variables in the data set.
 
 ```{r, fig.align="center"}
 ind_variables <- c(
@@ -275,9 +273,9 @@ pctmin_per_region <- lm(pctmin80~west, data = crime)
 ### Summary of variables
 
 The table below summarizes all variables in the dataset, and includes the expected impact of each on the dependent variable, crime rate, along with the actual correlation. Also included, as a framework for the analysis, is an assessment of the rapidity at which policy could be enacted and be effective. 
-- Short term policy impact are policies that could be implemented quickly, within the months preceeding and immedietly after an election. The support and lobbying for judges with perspectives that would support policies relating to custodial terms and their length,for example. 
-- Medium term policies are those that take some planning and financing, but which can be implemented and results demonstrated during an electoral term.  This may include recruiting and training police officers, or upgrades of crime investigation equipment.
-- Long term policies would be those needing sustained effort or funding, and results will be outside of the duration of a single term.  These may be developing incentives and strategies to reduce population density 
+ - Short term policy impact are policies that could be implemented quickly, within the months preceeding and immedietly after an election. The support and lobbying for judges with perspectives that would support policies relating to custodial terms and their length, for example. 
+ - Medium term policies are those that take some planning and financing, but which can be implemented and results demonstrated during an electoral term.  This may include recruiting and training police officers, or upgrades of crime investigation equipment.
+ - Long term policies would be those needing sustained effort or funding, and results will be expected outside of the duration of a single term.  These may be developing incentives and strategies to reduce population density 
 
 ```{r, echo = TRUE}
 var_labels <- c("crimes committed per person", "probability of arrest",
@@ -363,9 +361,9 @@ Based on the above charts, `crmrte` is skewed towards the right tail (a number o
 
 ### Main control variables
 
-Our primary focus in this analysis is on two variables: `prbarr` and `prbconv`. These two variables, the probability of arrest and the probability of conviction respectively, have relatively high correlation with crime rate and have potential to be influenced by political action. We will try to understand how probability of arrest `prbarr` and probability of conviction `prbconv` impact crime rate. If they are strong causal factors, we can define policies that influence these two factors and, hence, help us lower crime rates across North Carolina.
+Our primary focus in this analysis is on two variables: `prbarr` and `prbconv`. These two variables, the probability of arrest and the probability of conviction respectively, have relatively high correlation with crime rate and have the potential to be influenced by political action. We will try to understand how probability of arrest `prbarr` and probability of conviction `prbconv` impact crime rate. If they are strong causal factors, we can capitalize on them, developing policies that help us lower crime rates across North Carolina
 
-Earlier in this report, we hypothesised that these two variables would have a negative impact on our dependent variable: the higher the probabilities of arrest and conviction, the lower the crime rate. Before building a model with these two variables, however, we want to make a case of including two more variables in our first model: `density` and `west`.
+Earlier in this report, we hypothesised that these two variables would have a negative impact on our dependent variable: the higher the probabilities of arrest and conviction, the lower the crime rate. Before building a model with these two variables, however, we want to make a case of including two more variables in our first model: `density` and `west`
 
 First, let’s consider crime rate by region (we recoded the third region as "other" for analysis purposes):
 
@@ -375,7 +373,7 @@ crime$region <- ifelse(crime$west == 1, "west",
 aggregate(crmrte ~ region, data = crime, mean)
 ```
 
-Based on the table above, crime rate in the West region is lower than in the Central and Other regions. We therefore need to control for regionality in order to get an unbiased read on the two selected probability variables.
+Based on the table above, and as discussed in teh EDA, crime rate in the West region is lower than in the Central and Other regions. We therefore need to control for regionality in order to get an unbiased read on the two selected probability variables
 
 On the other hand, density has the highest correlation with crime rate (0.73). And the chart below shows clear support for a strong linear relationship between the two variables:
 
@@ -387,21 +385,21 @@ ggplot(crime, aes(density, crmrte)) +
   theme(plot.title = element_text(size = 10))
 ```
 
-We also know that `west` and `density` have a different relationship with `crmrte`; even though crime rate is the lowest in the West, density is the highest in the Central region. Hence, we need both `west` and `density` in our initial model to get unbiased estimates of `prbarr` and `prbconv`.
+We also know that `west` and `density` have a different relationship with `crmrte`; even though crime rate is the lowest in the West, density is the highest in the Central region. Therefore, we need both `west` and `density` in our initial model to get unbiased estimates of `prbarr` and `prbconv`.
 
 ```{r}
 aggregate(density ~ region, data = crime, mean)
 ```
 
-**Note**: we tested *central* and *urban* in our models and they were not significant predictors for crime rate.
+**Note**: we tested *central* and *urban* in our models and they were not significant predictors for crime rate
 
-Another important note about `density` is that it appears to be on a different scale than *people per square mile*. Internet research revealed that current average density in NC is 187.6 *people per square mile*, while in the provided dataset the average value is 1.43 (for 1987). Comparison of county-level density between provided dataset and current numbers provided stronger confirmation that *density* in 1987 *crime* dataset is *population per 100 sq.miles*. This clarification will be important for model coefficient interpretation.
+Another important note about `density` is that it appears to be on a different scale than *people per square mile*. Internet research revealed that current average density in NC is 187.6 *people per square mile*, while in the provided dataset the average value is 1.43 (for 1987). Comparison of county-level density between provided dataset and current numbers provided stronger confirmation that *density* in 1987 *crime* dataset is *population per 100 sq.miles*. This clarification will be important for model coefficient interpretation
 
 ### Model #1
 
 Our first model contains four variables: `density`, `west`, `prbarr`, `prbconv`.
 
-However, first, since the two probability variables are on the scale from 0 and 1 (except the outliers), we will multiply them both by 100 to change the scale to 0 to 100. This will allow the interpretation to be the percent change in crime rate per one point change in probability.
+Since the two probability variables are on the scale from 0 and 1 (except the outliers), we will multiply them both by 100 to change the scale to 0 to 100. This will allow the interpretation to be the percent change in crime rate per one point change in probability.
 
 ```{r}
 crime$prbarr_imp100 <- 100 * crime$prbarr_imp
@@ -464,12 +462,12 @@ As we can see, there is a slight change in the coefficient for $west$. However, 
 
 ### Model #2
 
-We tested most of other variables in the dataset that potentially could be related to crime rate (using correlations). At the end we decided to add the following variables: `polpc`, `pctmin80`, and an interaction of `west` and `polpc`.
-Police per capita is not only highly correlated with crime rate, but it does seem to have a direct link to crime. What we see from correlation analysis is counter-intuitive at first glance: the higher police per capita, the higher crime rate. Logically, we would expect that increasing police presence would decrease crime rate over time. However, this dataset is panel data at one moment in time, not a time series. Hence, counties with higher crime per capita require more police presence. Therefore, this variable is necessary for control purposes and it improves the fit of the model.
+We tested the other variables in the dataset for their relationship to crime rate (using correlations). We decided to add the following variables: `polpc`, `pctmin80`, and an interaction of `west` and `polpc`.
+As discussed as part of the correlation descriptions, police per capita is not only highly correlated with crime rate, but it does seem to have a direct link to crime. While variable is necessary for control purposes and it improves the fit of the model, formulating policies using this variable is not advised 
 
-The percent of minorities also helps with model fit. It is hard to hypothesize why correlation with crime rate is positive. Do poorer counties have larger minority populations? In this case, personal income would be a confounding variable that we don’t have. Or do counties with more minorities have more gangs? This would also be a confounding variable. In any case, percent minorities will be used as representative of omitted factors.
+The percent of minorities also helps with model fit. It is hard to hypothesize why correlation with crime rate is positive. Do poorer counties have larger minority populations? In this case, personal income would be a confounding variable that we don’t have. Or do counties with more minorities have more gangs? This would also be a confounding variable. Percent minorities will be used as representative of omitted factors.
 
-Before adding these variables, though, we decided to transform the `polpc` variable by taking its log. We perform this transformation for two reasons: there is a stronger correlation between the log of police per capita and the log of the crime rate variable than that of the raw values or of the log of the crime rate and the raw police per capita. This tells us that there is a better correlation between percent changes in the two variables than the raw changes. Performing this transformation also improves the quality of our regression model. The transformation is performed here:
+Before adding these variables, we decided to transform the `polpc` variable by taking its log. We perform this transformation for two reasons: there is a stronger correlation between the log of police per capita and the log of the crime rate variable than that of the raw values or of the log of the crime rate and the raw police per capita. This tells us that there is a better correlation between percent changes in the two variables than the raw changes. Performing this transformation also improves the quality of our regression model. The transformation is performed here:
 
 ```{r}
 crime$polpc_imp.ln <- log(crime$polpc_imp)
@@ -493,7 +491,7 @@ kable(crmrte.polpc.cor, col.names = c("Variables", "Correlation"),
       booktabs = TRUE)
 ```
 
-We also combine `west` and the transformed `polpc` (`polpc_imp.ln`) by multiplying them. Why do we add this interaction? Because the police per capita in the West region has much lower correlation with crime rate than police per capita in the other regions, as is shown here:
+We also combine `west` and the transformed `polpc` (`polpc_imp.ln`) by multiplying them. The interaction is necessary as the police per capita in the West region has a much lower correlation with crime rate than police per capita in the other regions, as is shown here:
 
 ```{r}
 region <- c("West",
@@ -556,7 +554,7 @@ kable(coef2, booktabs = TRUE) %>%
       column_spec(3, width = "35em")
 ```
 
-The interaction term (`I(west * polpc_imp.ln)`) is harder to interpret. It applies only to the West region. That means that the `polpc_imp.ln` coefficient of 0.6358 applies only to Central and Other regions. In the West the coefficient for `polpc_imp.ln` is actually 0.0257 (0.6358 - 0.6101) or per each percent change in police per capita in the West, there is only a 0.0257% change in crime rate. This value is relatively close to zero and implies no practically significant relationship between the two variables in that region. This is supported by correlations we examined earlier in this section.
+The interaction term (`I(west * polpc_imp.ln)`) is harder to interpret. It applies to the West region only. That means that the `polpc_imp.ln` coefficient of 0.6358 applies only to Central and Other regions. In the West the coefficient for `polpc_imp.ln` is actually 0.0257 (0.6358 - 0.6101) or for each percent change in police per capita in the West, there is only a 0.0257% change in crime rate. This value is relatively close to zero and implies no practically significant relationship between the two variables in that region. This is supported by correlations we examined earlier in this section.
 
 As for the `west` coefficient, it also cannot be interpreted in isolation because setting `polpc_imp.ln` to zero does not make practical sense. If on the other hand, we use the mean of `polpc_imp.ln` for the West region then the partial effect for `west` is as follows:
 
@@ -588,7 +586,7 @@ waldtest(model2, model1, vcov = vcovHC)
 
 ### Model #3 - All Variables
 
-Finally, our last model includes all variables, including our imputed variables. We transform all wage variables by taking their natural log. This will allow us to interpret the coefficients as elasticities instead of using absolute wage changes.
+Our last model includes all variables, including our imputed variables. We transform all wage variables by taking their natural log. This will allow us to interpret the coefficients as elasticities instead of using absolute wage changes.
 
 ```{r}
 wage.vars <- c("wcon", "wtuc", "wtrd", "wfir", "wser_imp", "wmfg", "wfed",
@@ -639,7 +637,7 @@ stargazer(model1, model2, model3,
  - The coefficient for `density` decreases from model 1 to model 2 as we introduce more variables that likely interact with it (for example, `west`). However, its standard error remains small enough for `density` effect on crime rate to be significant. In model 3, however, its standard error increases most likely due to strong interaction with added variables
  - `polpc` maintains its statistically significant coefficient with low standard error in model #3
  - `pctmin80` is also robust as its coefficient stays statistically significant in model #3
- - All other variables are not statistically significant in model #3, except `pctymle`. However, as we tested this variable in model 2, its standard error was too high. Hence, this variable is not robust enough to keep it in our main model
+ - All other variables are not statistically significant in model #3, except `pctymle`. However, as we tested this variable in model 2, its standard error was too high. We can conclude that this variable is not robust enough to keep it in our main model
 
 ### CLM Assumption Analysis
 
@@ -824,20 +822,17 @@ omv_desc <- c(
   some areas being under-reported. Sexual assaults specifically can be difficult for 
   victims to report for fear of social isolation or reprisals in smaller communities. 
   The presence of gangs, undocumented immigrants, those poor and uninsured, or
-  local judicial services being overwhelmed and unavailable may be a cause in 
+  where local judicial services are overwhelmed and unavailable may be a cause in 
   some more urban areas", "",
   "There have been several studies that suggest that someone who has committed a crime 
   in the past is more likely to commit crimes in the future[^2]. The proportion of people 
   with prior convictions in a county could be an additional driver that would impact 
   crime rate", "",
-  "The employment levels in a county are likely to have an impact on crime rate", "",
+  "The employment level in a county are likely to have an impact on crime rate", "",
   "The level of education in a county could be an indicator of some crimes", "",
   "Strong community ties, generally in rural areas, can have a suppressing effect on crime.
-  This is a counter-weight to education levels and unemployment, both of which may be higher 
-  in such communities. This is not necessarily in all areas of low population as there are
-  areas, on the outer banks, where many second homes are located and which can be victim to
-  burglary and theft. The strength of community can also cause crimes to be unreported and
-  dealt with through informal means", "",
+  The strength of community can also cause crimes to be unreported and dealt with through
+  informal means", "",
   "Inequality of wealth can be a driver of crime. Regardless of average wage value, if the
   difference in wages is generally high, i.e. if there are disparities in the distribution
   amongst the population, crimes will tend to increase"
@@ -847,7 +842,7 @@ omv_inf <- c(
   "There is an expectation that less affluent communities in urban areas would be most
   impacted, which may explain some of the higher rates of crime in more densely populated
   counties and bias the coefficient of 'density' in our model.  However, we have not
-  recommended policy decisions base on density, therefore no impact on conclusions", "",
+  recommended policy decisions based on density", "",
   "May impact rural areas and pockets of urban areas with impacts that would lower those
   coefficients.  Additionally, the greater the police presence, the more likely crimes are 
   to be reported which may be artificially increasing crimes recorded in heavily policed 
@@ -864,10 +859,12 @@ omv_inf <- c(
   this factor", "",
   "There may be covariance between lower levels of education and lower wages, along
   with unemployment. It is likely to have in impact on tax per capita or the lower wages
-  number, neither of have been included in the model","",
-  "This is another complex factor, but would be expected to explain part of the coefficient 
-  for population density meaning density, negatively impact models, making the density
-  coefficient less positive","",
+  number, neither of which have been included in the model","",
+  "This is a counter-weight to education levels and unemployment, both of which may be higher 
+  in such communities. This is not necessarily in all areas of low population as there are
+  areas, on the outer banks, where many second homes are located that can victim to
+  burglary and theft. This is expected to explain part of the coefficient 
+  for population density making the density coefficient less positive","",
   "This is likely to impact higher density areas, as the population is greater and the
   probability of disparities existing is higher. Therefore, this is another factor that 
   would detrimentally impact the density coefficient in models"
@@ -879,9 +876,10 @@ omv_proxy <- c(
   be available, and deaths caused by drugs are captured by the CDC", "",
   "While police presence may be an indicator of likelihood that offenses are reported, 
   it would not be a strong proxy. Assessing numbers of groups less likely to report crime 
-  may help (undocumented migrants, uninsured property, counties with high case backlog)","",
-  "Use of one of the economic variables may act as proxy, but there will be a lot of other 
-  variable impact in there also.","",
+  may help (undocumented migrants, uninsured property, counties with high case backlog) or 
+  a comparison of crimes that are generally under reported, accross the counties","",
+  "Use of one of the economic variables may act as proxy, but a better understanding 
+  of those variables will be necessary.","",
   "A combination of young male and minority may be used as a proxy, however this may 
   miss pockets of unemployment in other demographics. Additionally, young males may 
   be university students in certain counties","",
@@ -891,10 +889,10 @@ omv_proxy <- c(
   "A good proxy is not clearly available in this dataset, and may be hard to identify in 
   general.  Data on church attendance may be useful, as could membership or attendants of 
   other civic societies", "",
-  "Having made efforts to use the wages in different sectors to understand disparities, this
-  was not deemed practical, given the limitations in the understanding of this data as 
+  "Efforts were made to use the wages in different sectors to understand disparities, but
+  were not deemed practical, given the limitations in the understanding of this data as 
   outlined in the EDA.  Some more detailed tax information within the county population may
-  useful to generate some understanding into this factor"
+  be useful to generate some understanding into this factor"
 )
 omv_table <- data.frame("Omitted Variable" = omv_items,
                     "Description" = omv_desc, 
@@ -934,11 +932,3 @@ One of the more striking findings is that the probability of a custodial sentenc
 It is also worth mentioning that, due to the difference in the crime levels in the West of the state, there may be more specific polities that would apply there.  Retirees, second home owners and bay/ocean communities may attract a different type of crime than the mix in the rest of the state.
 
 The number of omitted variables that impact the population density coefficient suggest that there is room for policy development in this area also, but in order to target specific contributors of crime some of those variables must be captured.  Providing data on drug abuse, unemployment, poverty and recidivism will help to understand more about the bivariate relationships impacting the coefficient for population density.
-
-
-_Just a note:_
-_The Sixth Amendment to the United States Constitution and Article I, Section 24, of
-the North Carolina Constitution provide a person charged with a crime the right to a
-trial by a jury. All criminal trials in the superior court are by a jury; the North Carolina
-Constitution does not allow a judge to decide a criminal defendant’s guilt or innocence
-at trial in superior court_
