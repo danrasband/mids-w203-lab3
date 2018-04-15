@@ -153,7 +153,8 @@ facet_grid(region~.) +
 geom_smooth(method = "lm", se = FALSE) +
   xlab("Police per capita") +
   ylab("Crime Rate") +
-  ggtitle("Police per Capita vs. Crime Rate by Region")
+  ggtitle("Police per Capita vs. Crime Rate by Region")+
+  theme(plot.title = element_text(size = 10))
 ```
 
 It is clear that the impact of this observation is significant to the trend of police per capita on crime rate. There may be a valid reason for so many police per capita in one specific county, but as it is not representative of the rest of the population it will be removed. Additionally, according to governing.com[^1], police per population in Washington DC (where the highest concentration of police force might be expected) is 0.0065, which is still a lot fewer than this outlier.  
@@ -180,8 +181,9 @@ ggplot(crime, aes(polpc, prbarr)) +
   geom_smooth(method = "lm", se = FALSE) +
   xlab("Police per capita, $") +
   ylab("Probability of arrest") +
-  ggtitle(paste("Demonstration of relationship between Police per Capita and",
-                "Probability of Arrest", sep = "\n"))
+  ggtitle(paste("Demonstration of relationship between Police per Capita",
+                "and Probability of Arrest", sep = "\n")) +
+  theme(plot.title = element_text(size = 10))
 ```
 
 The unrepresentativeness of these outliers can be demonstrated when correlation between two variables is compared. The correlation changes from positive to negative if the observation #51 with the outlier is excluded:
@@ -250,7 +252,8 @@ ggplot(data = cor_mat_upper2, aes(Var1, Var2, fill = value)) +
   scale_x_discrete(position = "top") +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 8, hjust = 0),
         axis.title.x=element_blank(),
-        axis.title.y=element_blank()) +
+        axis.title.y=element_blank(),
+        plot.title = element_text(size = 10)) +
   coord_fixed() +
   ggtitle("Correlation Matrix")
 ```
@@ -380,7 +383,8 @@ On the other hand, density has the highest correlation with crime rate (0.73). A
 ggplot(crime, aes(density, crmrte)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
-  ggtitle("Crime Rate vs. Density")
+  ggtitle("Crime Rate vs. Density")+
+  theme(plot.title = element_text(size = 10))
 ```
 
 We also know that `west` and `density` have a different relationship with `crmrte`; even though crime rate is the lowest in the West, density is the highest in the Central region. Hence, we need both `west` and `density` in our initial model to get unbiased estimates of `prbarr` and `prbconv`.
@@ -508,6 +512,8 @@ cor.by.region <- data.frame(region, region_cor)
 kable(cor.by.region, col.names = c("Region", "Correlation"),
       booktabs = TRUE)
 ```
+
+For unknown reasons, the relationship between $crmrte$ and $polpc$ varies significantly by region. In particular, it is weak in the Western region, and very strong in the Central. This could be explained by different policing strategies, as well as their effectiveness. However, we do not have any variables to control for that. The best we can do is to create an interaction term between $west$ and $polpc$ as a proxy for omitted variables.
 
 Now, to the actual model:
 
@@ -684,6 +690,38 @@ plot(model2, which = 1, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 2:\nResiduals vs. Fitted", caption = "")
 ```
 
+For model #2, observation #51 seems to be pulling the errors away from 0 more than any other observation. This is the same observation where we replaced `prbarr` and `polpc` with sample means. However, it appears that this was not enough. Below is the comparison of key variables means in the West region and observation #51 (which is in the West region):
+
+```{r}
+model2a.ind_vars <- c("density", "west", "prbarr", "prbconv",
+                     "polpc", "pctmin80")
+county_check <-
+  data.frame(t(rbind(round(mapply(mean, crime[crime$west == 1,c("crmrte",model2a.ind_vars)]),4),
+      crime[51,c("crmrte",model2a.ind_vars)])))
+colnames(county_check) <- c("Averages in West", "Obs #51")
+county_check$Diffrence <- paste(round(100*(county_check$`Obs #51`/ county_check$`Averages in West`-1),1),"%",sep="")
+county_check
+```
+
+It appears that this observation deviates significantly in all key variables from the mean. Moreover, observation #51 contains:
+
+ - the lowest `crmrte` in the entire dataset
+ - the highest `polpc` and `prbarr` (which we replaced with means for reasons stated above)
+ - the lowest `pctmin80` in the entire dataset
+ 
+We don't have enough information to judge if this county is an odd ball or a data entry error. However, it exhibits characteristics of an outlier in our model #2. We should check the assumption #4 for the model without this observation:
+
+```{r, fig.height = 3, fig.width = 7, fig.align="center"}
+model2a <- lm(model2.formula, data = crime[-51,])
+par(mfrow=c(1,2), mar=c(2,4,2,0))
+plot(model2, which = 1, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
+     main = "Model 2 full dataset:\nResiduals vs. Fitted", caption = "")
+plot(model2a, which = 1, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
+     main = "Model 2 excluding obs #51:\nResiduals vs. Fitted", caption = "")
+```
+
+It appears that zero-conditional mean is closer to 0 on the lower end of the dependent variable. However, this assumption still seems to be violated. 
+
 Similar findings apply to the Normal Q-Q plot below. The most significant deviation from normality, however, is observed for counties with high crime rates in model #2. This pattern is not as evident in model #1. Hence, more investigation is needed to determine which variables in model #2 contribute to this deviation.
 
 ```{r, fig.height = 3, fig.width = 7, fig.align="center"}
@@ -715,6 +753,39 @@ plot(model1, which = 5, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
 plot(model2, which = 5, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 2:\nResiduals vs. Leverage", caption = "")
 ```
+
+Again, we can check this assumption on the dataset with excluded observation #51:
+
+```{r, fig.height = 3, fig.width = 7, fig.align="center"}
+par(mfrow=c(1,2), mar=c(2,4,2,0))
+plot(model2, which = 3, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
+     main = "Model 2 full dataset\nScale-Location", caption = "")
+plot(model2a, which = 3, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
+     main = "Model 2 excluding obs #51:\nScale-Location", caption = "")
+```
+
+It appears that excluding this observation removes some of the heteroskedasticity in the residuals. At this point we can check if our key model (#2) changes when observation #51 is excluded:
+
+```{r}
+coef_compare <- data.frame(
+  cbind(round(coeftest(model2, vcov = vcovHC, level = 0.05)[,1],4),
+      round(coeftest(model2a, vcov = vcovHC, level = 0.05)[,1],4),
+      round(coeftest(model2, vcov = vcovHC, level = 0.05)[,3],2),
+      round(coeftest(model2a, vcov = vcovHC, level = 0.05)[,3],2)))
+colnames(coef_compare) <- c("Est. Full Dataset",
+                            "Est. w/o obs 51",
+                            "t-stat Full Dataset",
+                            "t-stat w/o obs 51")
+coef_compare$Estimate.Diff <- 
+  paste(round(100*(coef_compare$`Est. w/o obs 51`/coef_compare$`Est. Full Dataset` - 1),1),"%", sep = "")
+
+kable(coef_compare, booktabs = TRUE) %>%
+  kable_styling(font_size = 8, 
+                full_width = FALSE) %>%
+  row_spec(0, bold = TRUE)
+```
+
+Our estimates change by 1-8% on average and all t-stats remain above 2 (except the intercept). This indicates that our model #2 is robust to outliers and it can be used for deriving policies to reduce crime rate.
 
 #### MLR.6: Normality of Errors
 
