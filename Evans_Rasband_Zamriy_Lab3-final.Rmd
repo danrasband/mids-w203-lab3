@@ -105,8 +105,7 @@ kable(crime_summary, booktabs = TRUE) %>%
 From the above table it can be seen that in several counties, the probability of arrest or the probability of conviction variables are greater than one, indicating that more arrests were carried out than crimes committed, or more convictions than those arrested.
 
 ```{r, fig.height = 2, fig.width = 6, fig.align="center"}
-par(mar=c(0,2,1,0))
-par(mfrow=c(1,2))
+par(mfrow=c(1,2), mar=c(0,2,1,0))
 boxplot(crime$prbarr,
         col = "darkgreen", cex.main = 0.6, cex.axis = 0.6, cex.lab = 0.6,
         main = "Probability of Arrest")
@@ -344,8 +343,7 @@ This transformation would also allow us to interpret the coefficients of predict
 Let's take a look at histograms for `crmrte` (as it is and transformed):
 
 ```{r, fig.height = 3, fig.width = 7, fig.align="center"}
-par(mar=c(2,4,1,0))
-par(mfrow=c(1,2))
+par(mfrow=c(1,2), mar=c(2,4,1,0))
 hist(crime$crmrte,
      breaks = 15, xlim = c(0,0.1), ylim = c(0,17), col = "darkblue",
      cex.main = 0.6, cex.axis = 0.6, cex.lab = 0.6,
@@ -400,10 +398,9 @@ Our first model contains four variables: `density`, `west`, `prbarr`, `prbconv`.
 However, first, since the two probability variables are on the scale from 0 and 1 (except the outliers), we will multiply them both by 100 to change the scale to 0 to 100. This will allow the interpretation to be the percent change in crime rate per one point change in probability.
 
 ```{r}
-crime$prbarr_imp100 <- 100*crime$prbarr_imp
-crime$prbconv100 <- 100*crime$prbconv
+crime$prbarr_imp100 <- 100 * crime$prbarr_imp
+crime$prbconv100 <- 100 * crime$prbconv
 ```
-
 
 ```{r}
 model1.ind_vars <- c("density", "west", "prbarr_imp100", "prbconv100")
@@ -424,7 +421,7 @@ interpret1 <- c("","For each person per square mile increase in density,
                 "For approximately each percentage increase in probability of conviction,
                 crime rate decreases by 0.69%")
 
-coef1 <- data.frame("Model 1 Coefficients" = round(model1$coefficients,4),
+coef1 <- data.frame("Model 1 Coefficients" = round(model1$coefficients, 4),
                     "Interpretation" = interpret1)
 
 kable(coef1, booktabs = TRUE) %>%
@@ -514,7 +511,7 @@ Now, to the actual model:
 
 ```{r}
 model2.ind_vars <- c("density", "west", "prbarr_imp100", "prbconv100",
-                     "polpc_imp.ln", "pctmin80", "west*polpc_imp.ln")
+                     "polpc_imp.ln", "pctmin80", "I(west * polpc_imp.ln)")
 model2.formula <- as.formula(paste("log(crmrte) ~ ",
                                    paste(model2.ind_vars, collapse = " + "),
                                    sep = ""))
@@ -551,13 +548,13 @@ kable(coef2, booktabs = TRUE) %>%
       column_spec(3, width = "35em")
 ```
 
-The interaction term (`west:polpc_imp.ln`) is harder to interpret. It applies only to the West region. That means that the `polpc_imp.ln` coefficient of 0.636 applies only to Central and Other regions. In the West the coefficient for `polpc_imp.ln` is actually 0.0064 (0.6360 - 0.6296) or per each percent change in police per capita in the West, there is only a 0.0064% change in crime rate. This value is close to zero and implies no practically significant relationship between the two variables in that region. This is supported by correlations we examined earlier in this section.
+The interaction term (`I(west * polpc_imp.ln)`) is harder to interpret. It applies only to the West region. That means that the `polpc_imp.ln` coefficient of 0.636 applies only to Central and Other regions. In the West the coefficient for `polpc_imp.ln` is actually 0.0064 (0.6360 - 0.6296) or per each percent change in police per capita in the West, there is only a 0.0064% change in crime rate. This value is close to zero and implies no practically significant relationship between the two variables in that region. This is supported by correlations we examined earlier in this section.
 
 As for the `west` coefficient, it also cannot be interpreted in isolation because setting `polpc_imp.ln` to zero does not make practical sense. If on the other hand, we use the mean of `polpc_imp.ln` for the West region then the partial effect for `west` is as follows:
 
 ```{r}
 mean_polpc <- mean(crime[crime$region=="west",]$polpc_imp.ln)
-coef_west_polpc <- model2$coefficients["west:polpc_imp.ln"]
+coef_west_polpc <- model2$coefficients["I(west * polpc_imp.ln)"]
 coef_west <- model2$coefficients["west"]
 coef_west + coef_west_polpc*mean_polpc
 ```
@@ -597,10 +594,10 @@ And then we create our third model, which includes all of variables, transformed
 
 ```{r}
 model3.ind_vars <- c("prbarr_imp100", "prbconv100", "prbpris", "avgsen",
-                     "polpc_imp.ln", "density", "taxpc", "west", "central",
-                     "urban", "pctmin80", "wcon.ln", "wtuc.ln", "wtrd.ln",
-                     "wfir.ln", "wser_imp.ln", "wmfg.ln", "wfed.ln", "wsta.ln",
-                     "wloc.ln", "mix", "pctymle")
+                     "polpc_imp.ln", "I(west * polpc_imp.ln)", "density", "taxpc",
+                     "west", "central", "urban", "pctmin80", "wcon.ln", 
+                     "wtuc.ln", "wtrd.ln", "wfir.ln", "wser_imp.ln", "wmfg.ln", 
+                     "wfed.ln", "wsta.ln", "wloc.ln", "mix", "pctymle")
 model3.formula <- as.formula(paste("log(crmrte) ~ ",
                                    paste(model3.ind_vars, collapse = " + "),
                                    sep = ""))
@@ -608,7 +605,7 @@ model3 <- lm(model3.formula, data = crime)
 summary(model3)$adj.r.squared
 ```
 
-Despite adding a lot more variables, the $R^2$ of the all-inclusive regression model went up only to 82.3% (from 80.1% in model 2). That means that additional variables did not contribute much to the model fit.
+Despite adding a lot more variables, the $R^2$ of the all-inclusive regression model went up only to 83.0% (from 80.1% in model 2). That means that additional variables did not contribute much to the model fit.
 
 Now let's compare the coefficients in this model to the other two models:
 
@@ -632,13 +629,49 @@ stargazer(model1, model2, model3,
  - `pctmin80` is also robust as its coefficient stays statistically significant in model #3
  - All other variables are not statistically significant in model #3. The only exception is $central$. However, when we tested this variable in model #2 it didn't maintain its significance. Hence, it is highly sensitive to model definition
 
-### Residual Analysis
+### CLM Assumption Analysis
 
-From the first plot (residuals vs. fitted values), it is evident that there are some instances with very low and very high crime rates that make residuals deviate from 0. Interestingly enough, observation #51 still appears as an outlier (that's where we recoded $polpc$ and $prbarr$). It might be that this observation needs to be excluded from the anlaysis in future iterations. 
+In this section we discuss the classic linear model (CLM) assumptions of our models. Since model #2 has the highest number of significant coefficients, we will include a full explication of the assumptions for that model, referencing the other models for comparison or when surprising deviations are apparent.
+
+#### MLR.1: Linearity in Parameters
+
+For all three models, we assume linearity in parameters by default. We have made natural log transformations to the crime rate, police per capita, and wage variables to capture nonlinear relationships between those variables within a linear framework. This does not violate MLR.1.
+
+#### MLR.2: Random Sampling
+
+Our analysis of the random sampling assumption applies to all three models. Since the observations in the data include 90% (90/100) of all North Carolinian counties, it would be difficult to argue that the observations are not representative of the population. That said, there is always a possibility that the data set could include all counties except those with high density, high crime, low crime, or some other exceptional joint quality. Based on the variances of observations in the various variables, however, it appears that a wide variety of counties are represented, and are in fact representative of the population. For example, the natural log of `crmrate` is approximately normally distributed, and the untransformed `crmrte` variable ranges from close to zero (about 6 crimes per 1000 people) up to almost one hundred per one thousand people. Many other variables have a more or less reasonable variation and distrubution.
+
+```{r}
+cat(paste(
+  paste("Minimum crime rate:", round(min(crime$crmrte) * 1000), "per 1000 people", sep = " "),
+  paste("Maximum crime rate:", round(max(crime$crmrte) * 1000), "per 1000 people", sep = " "),
+  sep = "\n"
+))
+```
+
+One thing that seems to indicate a slight bias in the sampling is the region. It is apparent that there are fewer counties represented in the west than in other regions:
+
+```{r}
+cat(paste(
+  paste("West:", nrow(subset(crime, west == 1))),
+  paste("Central:", nrow(subset(crime, central == 1))),
+  paste("Other:", nrow(subset(crime, central == 0 & west == 0))),
+  sep = "\n"
+))
+```
+
+This is actually a fair representation of North Carolina, however, since the western region of the state is narrower than the central and eastern regions, meaning there are actually fewer counties in the western region.
+
+#### MLR.3: No Perfect Collinearity
+
+If all three regions ("West", "Central", and "Other") were used in the model, then there would be perfect multicollinearity, but R would remove one of them anyone and assumption would no longer be validated. Our models do not include variables that would violate this assumption.
+
+#### MLR.4: Zero Conditional Mean
+
+The assumption of zero condition mean of errors seems to be violated in models #1 and #2, as indicated by a seagull-silhouette-shaped residuals vs. fitted lines show here:
 
 ```{r, fig.height = 3, fig.width = 7, fig.align="center"}
-par(mar=c(2,4,2,0))
-par(mfrow=c(1,2))
+par(mfrow=c(1,2), mar=c(2,4,2,0))
 plot(model1, which = 1, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 1:\nResiduals vs. Fitted", caption = "")
 plot(model2, which = 1, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
@@ -648,41 +681,43 @@ plot(model2, which = 1, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
 Similar findings apply to the Normal Q-Q plot below. The most significant deviation from normality, however, is observed for counties with high crime rates in model #2. This pattern is not as evident in model #1. Hence, more investigation is needed to determine which variables in model #2 contribute to this deviation.
 
 ```{r, fig.height = 3, fig.width = 7, fig.align="center"}
-par(mar=c(2,4,2,0))
-par(mfrow=c(1,2))
+par(mfrow=c(1,2), mar=c(2,4,2,0))
 plot(model1, which = 2, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 1:\nNormal Q-Q", caption = "")
 plot(model2, which = 2, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 2:\nNormal Q-Q", caption = "")
 ```
 
-In the Scale-Location plot, again observation #51 is causing some heteroskedasticity in residuals for model #2. In model #1 standard deviation of residuals, on the other hand, looks constant.
+#### MLR.5: Homoskedasticity
+
+In the Scale-Location plot, again observation #51 is causing some heteroskedasticity in residuals for model #2. In model #1, the standard deviation of residuals, on the other hand, looks constant.
 
 ```{r, fig.height = 3, fig.width = 7, fig.align="center"}
-par(mar=c(2,4,2,0))
-par(mfrow=c(1,2))
+par(mfrow=c(1,2), mar=c(2,4,2,0))
 plot(model1, which = 3, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 1:\nScale-Location", caption = "")
 plot(model2, which = 3, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 2:\nScale-Location", caption = "")
 ```
 
-However, none of the observations stand out as outliers, even #51 in the Leverage charts below.
+However, none of the observations stand out as outliers, even #51 in the Cook's distance charts below.
 
 ```{r, fig.height = 3, fig.width = 7, fig.align="center"}
-par(mar=c(2,4,2,0))
-par(mfrow=c(1,2))
+par(mfrow=c(1,2), mar=c(2,4,2,0))
 plot(model1, which = 5, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 1:\nResiduals vs. Leverage", caption = "")
 plot(model2, which = 5, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 2:\nResiduals vs. Leverage", caption = "")
 ```
 
-Our dataset contains more than 30 observations (91 to be precise), so we can apply CLT to its residuals and assume they are normal. We still investigate the histograms for model #1 and #2 below. Neither of them fit into the normal distribution particularly well. 
+#### MLR.6: Normality of Errors
+
+From the first plot (residuals vs. fitted values), it is evident that there are some instances with very low and very high crime rates that make residuals deviate from 0. Interestingly enough, observation #51 still appears as an outlier (that's where we recoded $polpc$ and $prbarr$). It might be that this observation needs to be excluded from the anlaysis in future iterations.
+
+Our dataset contains more than 30 observations (90 to be precise), so we can apply CLT to its residuals and assume they are normal. We still investigate the histograms for model #1 and #2 below. Neither of them fit into the normal distribution particularly well, but they don't have particularly strong skews either.
 
 ```{r, fig.height = 3, fig.width = 5, fig.align="center"}
-par(mar=c(2,4,2,0))
-par(mfrow=c(1,2))
+par(mfrow=c(1,2), mar=c(2,4,2,0))
 hist(model1$residuals,
      breaks = 15,  col = "darkblue", xlim = c(-1,1),
      cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6, xlab = "",
@@ -693,12 +728,15 @@ hist(model2$residuals,
      main = "Model 2 Residuals")
 ```
 
-Overall, the residual analysis showed that our models have some issues with fitting certain values of crime rate (on the high end). Also, we can see some heteroskedasticity in residuals caused by a few observations. Further investigation will be conducted to analyze the reasons and potentially remove them.
+Overall, the residual analysis shows that our models have some issues with fitting certain values of crime rate (on the high end). We can also see some heteroskedasticity in residuals caused by a few observations.
 
 ## Omitted Variable Analysis
+
 ```{r}
 omv_items <- c(
-  "Drug and alcohol abuse levels","", "Unreported crime", "", "Recidivism", "", "Unemployment levels", "", "Education levels", "", "Strength of community", "", "Income inequality"
+  "Drug and alcohol abuse levels","", "Unreported crime", "", "Recidivism", "", 
+  "Unemployment levels", "", "Education levels", "", "Strength of community", "", 
+  "Income inequality"
 )
 
 omv_desc <- c(
@@ -708,40 +746,40 @@ omv_desc <- c(
   be done to catch the perpetrators (or perhaps vigilante justice) may lead to crimes in 
   some areas being under-reported. Sexual assaults specifically can be difficult for 
   victims to report for fear of social isolation or reprisals in smaller communities. 
-  The presence of gangs, undocumented immigrants, those poor and uninsured or
+  The presence of gangs, undocumented immigrants, those poor and uninsured, or
   local judicial services being overwhelmed and unavailable may be a cause in 
   some more urban areas", "",
   "There have been several studies that suggest that someone who has committed a crime 
-  in the past is more likely to commit crimes in the future[^1]. The proportion of people 
+  in the past is more likely to commit crimes in the future[^2]. The proportion of people 
   with prior convictions in a county could be an additional driver that would impact 
   crime rate", "",
-  "The employment levels in a county is likely to have an impact on crime rate", "",
+  "The employment levels in a county are likely to have an impact on crime rate", "",
   "The level of education in a county could be an indicator of some crimes", "",
   "Strong community ties, generally in rural areas, can have a suppressing effect on crime.
   This is a counter-weight to education levels and unemployment, both of which may be higher 
   in such communities. This is not necessarily in all areas of low population as there are
   areas, on the outer banks, where many second homes are located and which can be victim to
-  burglury and theft. The strength of community can also cause crimes to be unreported and
+  burglary and theft. The strength of community can also cause crimes to be unreported and
   dealt with through informal means", "",
   "Inequality of wealth can be a driver of crime. Regardless of average wage value, if the
-  difference in wages are generally high, i.e. if there are disparities in the distribution
+  difference in wages is generally high, i.e. if there are disparities in the distribution
   amongst the population, crimes will tend to increase"
 )
 
 omv_inf <- c(
   "There is an expectation that less affluent communities in urban areas would be most
-  impacted, which may explain some of the higher rates of crime in higher density populated
+  impacted, which may explain some of the higher rates of crime in more densely populated
   counties and bias the coefficient of 'density' in our model.  However, we have not
-  reccomended policy decisions base on density, therefore no impact on conclusions", "",
+  recommended policy decisions base on density, therefore no impact on conclusions", "",
   "May impact rural areas and pockets of urban areas with impacts that would lower those
   coefficients.  Additionally, the greater the police presence, the more likely crimes are 
   to be reported which may be artificially increasing crimes recorded in heavily policed 
-  areas.  While our model does include the policeing per capita, no policy decisions 
+  areas.  While our model does include the policing per capita, no policy decisions 
   are based upon it","",
   "It is unclear where this bias may have the strongest effect, but is unlikely to be in 
   the most affluent areas with the higher wages and taxes per capita.  If so, this could 
-  be artifically raising the coefficient of such variable. As these variables are not
-  included in the model, this will not impact policy recomendations but may be a factor 
+  be artificially raising the coefficient of such variable. As these variables are not
+  included in the model, this will not impact policy recommendations but may be a factor 
   to consider in further study","",
   "Unemployment is usually higher in the young and minorities. The higher positive 
   coefficients of percent minority variable in our models will include some amount of bias 
@@ -760,15 +798,15 @@ omv_inf <- c(
 )
 
 omv_proxy <- c(
-  "None available in this dataset, but arrests for drug specific criems are likely to 
+  "None available in this dataset, but arrests for drug-specific crimes are likely to 
   be available, and deaths caused by drugs are captured by the CDC", "",
-  "While police presence may be an indicator of liklihood that offences are reported, 
-  it would not be a strong proxy. Assessing numbers of groups least likely to report crime 
+  "While police presence may be an indicator of likelihood that offenses are reported, 
+  it would not be a strong proxy. Assessing numbers of groups less likely to report crime 
   may help (undocumented migrants, uninsured property, counties with high case backlog)","",
   "Use of one of the economic variables may act as proxy, but there will be a lot of other 
   variable impact in there also.","",
   "A combination of young male and minority may be used as a proxy, however this may 
-  miss pockets of unemployment in other demographics.  Additionally, young males may 
+  miss pockets of unemployment in other demographics. Additionally, young males may 
   be university students in certain counties","",
   "Use of tax per capita is possible, but may also reflect the underlying wage arbitrage in 
   a county.  Its also not clear what tax this relates to and may be unreliable as
@@ -796,9 +834,9 @@ kable(omv_table, booktabs = TRUE) %>%
   column_spec(4, width = "20em")
 ```
 
+[^2]: The Offending, Crime and Justice Survey (2003); RECIDIVISM AMONG FEDERAL OFFENDERS: A COMPREHENSIVE OVERVIEW
 
-[^1]: The Offending, Crime and Justice Survey (2003); RECIDIVISM AMONG FEDERAL OFFENDERS: A COMPREHENSIVE OVERVIEW
-
+\newpage
 
 ## Conclusion
 
@@ -812,13 +850,13 @@ Policies that will help police quickly identify the correct suspects for arrest 
 
 Historically, increasing police numbers are a quick policy decision to reduce crime.  While the model presented here might suggest it may actually increase crime, more work should be done to understand this.  As mentioned before, the data is panel in nature, and a time series would be more useful in demonstrating the impact of increased policing
 
-It is also pointed out that areas where there was a higher minority presence in 1980 also appear to exhibit higher rates of crime.  There is likely to be bivariate relationships that are impacting this, including poverty and unemployment levels which artificially increase the impact of this coefficient.  There could also be offsets as there may be a lower propensity to report crime in minority communities
+It is also pointed out that areas where there was a higher minority presence in 1980 also appear to exhibit higher rates of crime.  There is likely to be bivariate relationships that are impacting this, including poverty and unemployment levels which artificially increase the impact of this coefficient.  There could also be offsets as there may be a lower propensity to report crime in minority communities.
 
-One of the more striking findings is that the probability of a custodial sentence does not appear to be a strong influencer of crime rate.  This may be a result of the limited breakdown of crimes committed.  It is unlikely that a custodial sentence would be given for traffic offenses, vandalism and many petty crimes which form the majority of criminality, and therefore prison will not form a disincentive to commit them. The crimes that are likely to result in a prison sentence would have to be more closely analyzed to understand if the probability of committing that crime and going to prison impact the number of such crimes committed.  There are policy opportunities in this space.  Since judges are elected in North Carolina, campaigns can be formulated to attempt to elect judges that are hard on crime and have higher precedent of custodial sentencing.  There is a crime mix indicator provided in the dataset, however it does not clearly distinguish between those offenses punishable by prison and those that are not, and the results of using it provided limited insights.  Some more detailed data on crime will be needed to demonstrate how to incorporate this into policies
+One of the more striking findings is that the probability of a custodial sentence does not appear to be a strong influencer of crime rate.  This may be a result of the limited breakdown of crimes committed.  It is unlikely that a custodial sentence would be given for traffic offenses, vandalism and many petty crimes which form the majority of criminality, and therefore prison will not form a disincentive to commit them. The crimes that are likely to result in a prison sentence would have to be more closely analyzed to understand if the probability of committing that crime and going to prison impact the number of such crimes committed.  There are policy opportunities in this space.  Since judges are elected in North Carolina, campaigns can be formulated to attempt to elect judges that are hard on crime and have higher precedent of custodial sentencing.  There is a crime mix indicator provided in the dataset, however it does not clearly distinguish between those offenses punishable by prison and those that are not, and the results of using it provided limited insights.  Some more detailed data on crime will be needed to demonstrate how to incorporate this into policies.
 
-It is also worth mentioning that, due to the difference in the crime levels in the West of the state, there may be more specific polities that would apply there.  Retirees, second home owners and bay/ocean communities may attract a different type of crime than the mix in the rest of the state.   
+It is also worth mentioning that, due to the difference in the crime levels in the West of the state, there may be more specific polities that would apply there.  Retirees, second home owners and bay/ocean communities may attract a different type of crime than the mix in the rest of the state.
 
-The number of omitted variables that impact the population density coefficient suggest that there is room for policy development in this area also, but in order to target specific contributors of crime some of those variables must be captured.  Providing data on drug abuse, unemployment, poverty and recidivism will help to understand more about the bivariate relationships impacting the coefficient for population density
+The number of omitted variables that impact the population density coefficient suggest that there is room for policy development in this area also, but in order to target specific contributors of crime some of those variables must be captured.  Providing data on drug abuse, unemployment, poverty and recidivism will help to understand more about the bivariate relationships impacting the coefficient for population density.
 
 
 _Just a note:_
