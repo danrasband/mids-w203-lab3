@@ -52,7 +52,7 @@ crime <- read.csv("crime_v2.csv", stringsAsFactors = FALSE)
 dim(crime)
 ```
 
-There are a total of 91 observations in the dataset; 6 rows are completely devoid of data and can be excluded. 
+Of these observations, 6 rows are completely devoid of data and can be excluded. 
 
 ```{r}
 crime <- na.omit(crime)
@@ -81,6 +81,7 @@ dim(crime)
 As a result the final dataset contains 90 observations and 25 variables.
 
 It should be noted that there are 100 counties in North Carolina; therefore this dataset contains data for 90% of them. It is not possible to tell if the excluded counties are randomly distributed or share specific features that may bias this data set.
+
 Counties range in population numbers from 15,000 people to over 1 million. The data provided has many abstracted values such as ratios and averages, but without the actual numbers relating to those abstractions, it can be hard to draw practical significance from conclusions as each county will be considered equal to any other. As electoral representation in general does not follow population density, there may be advantages to analyzing data at a county level only, but this limitation should be considered depending on the inference that is being generated.
 
 One of the variables, the probability of conviction dimension, `prbconv`, was loaded as character and must be transformed to numeric data type in R. The following code makes this change:
@@ -89,7 +90,7 @@ One of the variables, the probability of conviction dimension, `prbconv`, was lo
 crime$prbconv <- as.numeric(as.character(crime$prbconv))
 ```
 
-The variables are made up of several different types of number, many are interactions: Ratios, specifically the probability of arrest, conviction and prison sentence, the percent minority, young male, police and tax revenue per capita, and the ratio (mix) of face to face crimes to other types of crime. The means of several variables are provided for each county: a series of weekly wages in different business segments, and prison sentences in days. Finally, an indicator of the location of the county in the state is also provided, indicating West and Central regions. An "Other" region can be identified by difference. The `urban` variable also indicates whether the county is a “Standard Metropolitan Statistical Area.” Below is a table of variables including some summary statistics:
+The variables are made up of several different types of number, many are interactions: Ratios, specifically the probability of arrest, conviction and prison sentence, the percent minority, young male, police and tax revenue per capita, and the ratio (mix) of face to face crimes to other types of crime. The means of several variables are provided for each county: a series of weekly wages in different business segments, and prison sentences in days. Finally, an indicator of the location of the county in the state is also provided, indicating West and Central regions. An "Other" region can be identified by difference. The `urban` variable also indicates whether the county is a “Standard Metropolitan Statistical Area”. Below is a table of variables including some summary statistics:
 
 ```{r}
 crime_summary <- data.frame(t(mapply(summary, crime)))
@@ -214,7 +215,7 @@ summary(crime$prbarr)
 summary(crime$prbarr_imp)
 ```
 
-The observation in question is county 115, observation 51. This county has the probability of arrest of over 1, and the exceptional police per capita. Furthermore, this county has the lowest crime rate, the highest average sentence, the lowest minority percentage and a conviction to arrest rate of over 1. It is an interesting county to be aware of as it does not appear to be representative of the state as a whole, and therefore some of the policy reccomendations may not be as effective there
+The observation in question is county 115, observation 51. This county has the probability of arrest of over 1, and the exceptional police per capita. Furthermore, this county has the lowest crime rate, the highest average sentence, the lowest minority percentage and a conviction to arrest rate of over 1. It is an interesting county to be aware of as it does not appear to be representative of the state as a whole, and therefore some of the broader state wide policy reccomendations may not be as effective there
 
 An additional data issue was identified for a county where both _west_ and _central_ variables are equal to 1:
 
@@ -379,7 +380,7 @@ aggregate(crmrte ~ region, data = crime, mean)
 
 Based on the table above, and as discussed in the EDA, crime rate in the West region is lower than in the Central and Other regions. We therefore need to control for regionality in order to get an unbiased read on the two selected probability variables
 
-Additionally, some comparison of group means reveals a 25% difference in percent minority between the western region and others. While this may be related to the presence of minorities, it is more likely to be the product of a bivariate relationship with a 3rd factor such as poverty. Tax per capita is not very different from other parts of the state, but the western regions of the outer banks are attractive for retirement communities which may be driving this impact
+Additionally, some comparison of group means reveals a 25% difference in percent minority between the western region and others. While this may be related to the presence of minorities, it is more likely to be the product of a bivariate relationship with a 3rd factor such as poverty. Perhaps migrants are more attracted to wealthy or more populated areas so as to find employment opportunities
 
 ```{r}
 pctmin_per_region <- lm(pctmin80 ~ west, data = crime)
@@ -450,7 +451,7 @@ kable(coef1, booktabs = TRUE) %>%
 
 Our model is consistent with our initial hypothesis: both probability variables have a negative impact on crime rate. Moreover, a one-point change in probability of arrest has more than two times higher impact on crime rate than a one-point change in probability of conviction. This confirms our hypothesis that probability of arrest has a stronger effect on crime rate because it's closer to the act of a crime (being arrested is easier to relate to than being convicted).
 
-The adjusted $R^2$ for this model is 67.2%:
+The adjusted $R^2$ for this model is 67.2% which means a lot of the the variations are explained by this model:
 
 ```{r}
 summary(model1)$adj.r.squared
@@ -462,7 +463,7 @@ All of the coefficients are highly statistically significant when we look at het
 coeftest(model1, vcov = vcovHC, level = 0.05)
 ```
 
-One last check is to compare model results for the full dataset and for the one excluding county #71 (where $west=central=1$):
+One last check is to compare model results for the full dataset and for the one excluding county #71 to ensure that it is not impacting the model (where $west=central=1$):
 
 ```{r}
 compare1 <- data.frame(cbind(round(coeftest(model1, vcov = vcovHC, level = 0.05)[,1],4),
@@ -650,7 +651,7 @@ stargazer(model1, model2, model3,
 **This table demonstrates the following:**
 
  - Our main variables of interest `prbarr` and `prbconv` have robust estimates in all models. Moreover, `prbarr` coefficient is consistently higher than for `prbconv`. Hence, it is more likely to cause crime rate to change
- - The coefficient for `density` decreases from model 1 to model 2 as we introduce more variables that likely interact with it (for example, `west`). However, its standard error remains small enough for `density` effect on crime rate to be significant. In model 3, however, its standard error increases most likely due to strong interaction with added variables
+ - The coefficient for `density` decreases from model 1 to model 2 as we introduce more variables that likely interact with it (for example, `west`). However, its standard error remains small enough for the `density` effect on crime rate to be significant. In model 3, however, its standard error increases most likely due to strong interaction with added variables especially `urban` and the wages
  - `polpc` maintains its statistically significant coefficient with low standard error in model 3
  - `pctmin80` is also robust as its coefficient stays statistically significant in model 3
  - All other variables are not statistically significant in model 3, except `pctymle`. However, as we tested this variable in model 2, its standard error was too high. We can conclude that this variable is not robust enough to keep it in our main model
@@ -704,7 +705,7 @@ plot(model2, which = 1, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 2:\nResiduals vs. Fitted", caption = "")
 ```
 
-For model 2, observation #51 seems to be pulling the errors away from 0 more than any other observation. This is the same observation where we replaced `prbarr` and `polpc` with sample means. However, it appears that this was not enough. Below is the comparison of key variables means in the West region and observation #51 (which is in the West region):
+For model 2, observation #51, again, seems to be pulling the errors away from 0 more than any other observation. This is the same observation where we replaced `prbarr` and `polpc` with sample means. Other observation #51 impacts, however are present. Below is the comparison of key variables means in the West region and observation #51 (which is in the West region):
 
 ```{r}
 model2a.ind_vars <- c("density", "west", "prbarr", "prbconv",
@@ -723,7 +724,7 @@ It appears that this observation deviates greatly in all key variables from the 
  - the highest `polpc` and `prbarr` (which we replaced with means for reasons stated above)
  - the lowest `pctmin80` in the entire dataset
 
-We don't have enough information to judge if this county is an odd ball or a data entry error. However, it exhibits characteristics of an outlier in our model 2. We should check the assumption #4 for the model without this observation:
+We don't have enough information to judge if this county is an exception or a data entry error. However, it exhibits characteristics of an outlier in our model 2. We should check the assumption #4 for the model without this observation:
 
 ```{r, fig.height = 3, fig.width = 7, fig.align="center"}
 model2a <- lm(model2.formula, data = crime[-51,])
@@ -735,6 +736,8 @@ plot(model2a, which = 1, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
 ```
 
 It appears that zero-conditional mean is closer to 0 on the lower end of the dependent variable. However, this assumption still seems to be violated
+
+It is likely that omitted variables are contributing to the violation. These are discussed below. As there are more variables included in the model three, this has helped to account for the conditional errors
 
 #### MLR.5: Homoskedasticity
 
@@ -868,7 +871,7 @@ omv_inf <- c(
   number, neither of which have been included in the model","",
   "This is a counter-weight to education levels and unemployment, both of which may be higher
   in such communities. This is not necessarily in all areas of low population as there are
-  areas, on the outer banks, where many second homes are located that can be victim to
+  areas, on the outer banks, where many second homes are located that can be a victim to
   burglary and theft. This is expected to explain part of the coefficient
   for population density making the density coefficient less positive","",
   "This is likely to impact higher-density areas, as the population is greater and the
@@ -934,6 +937,6 @@ It is also pointed out that areas where there was a higher minority presence in 
 
 One of the more striking findings is that the probability of a custodial sentence does not appear to be a strong influencer of crime rate. This may be a result of the limited breakdown of crimes committed. It is unlikely that a custodial sentence would be given for traffic offenses, vandalism and many petty crimes which form the majority of criminality, and therefore prison will not form a disincentive to commit them. The crimes that are likely to result in a prison sentence would have to be more closely analyzed to understand if the probability of committing that crime and going to prison impact the number of such crimes committed. There are policy opportunities in this space. Since judges are elected in North Carolina, campaigns can be formulated to attempt to elect judges that are hard on crime and have higher precedent of custodial sentencing. There is a crime mix indicator provided in the dataset, however it does not clearly distinguish between those offenses punishable by prison and those that are not, and the results of using it provided limited insights. Some more detailed data on crime will be needed to demonstrate how to incorporate this into policies
 
-It is also worth mentioning that, due to the difference in the crime levels in the West of the state, there may be more specific policies that would apply there. Retirees, second home owners and bay/ocean communities may attract a different type of crime than the mix in the rest of the state
+It is also worth mentioning that, due to the difference in the crime levels in the West of the state, there may be more specific policies that would apply there. More rural and sparcely populated communities where families have deeper roots and stronger ties may attract a different type of crime than the mix in the rest of the state
 
 The number of omitted variables that impact the population density coefficient suggest that there is room for policy development in this area also, but in order to target specific contributors of crime some of those variables must be captured. Providing data on drug abuse, unemployment, poverty and recidivism will help to understand more about the bivariate relationships impacting the coefficient for population density
