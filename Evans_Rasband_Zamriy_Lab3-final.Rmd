@@ -141,6 +141,11 @@ summary(crime$wser)
 summary(crime$wser_imp)
 ```
 
+The variable `density` is appears to be on a different scale from its original description: *people per square mile*. Internet research reveals that the current average density in North Carolina is 187.6 *people per square mile*, while in the provided dataset the average value is 1.43 (for 1987). In addition, the population of North Carolina is listed at 6.4 million in 1987[^1], and North Carolina's area is listed as 53,819 square miles.[^2] Simple math shows the density of North Carolina in 1987 to be approximately 118.9 people per square mile. Comparison of county-level density between the provided dataset and current numbers strongly indicates that `density` in the 1987 `crime` dataset is *hundreds of persons per square mile*. This clarification will be important for model coefficient interpretation.
+
+[^1]: https://www.statista.com/statistics/206270/resident-population-in-north-carolina/
+[^2]: https://en.wikipedia.org/wiki/North_Carolina
+
 The variable for police per capita (`polpc`) also has a notable outlier. This has generated some incongruent results with the rest of the dataset when segmented by region, as seen in the regression plots below.
 
 ```{r, fig.height = 4, fig.width = 5, fig.align="center"}
@@ -280,7 +285,7 @@ The table below summarizes all variables in the dataset, and includes the expect
 ```{r, echo = TRUE}
 var_labels <- c("crimes committed per person", "probability of arrest",
   "probability of conviction", "probability of prison sentence",
-  "avg. sentence, days", "police per capita", "people per sq. mile",
+  "avg. sentence, days", "police per capita", "100s of people per sq. mile",
   "tax revenue per capita", "=1 if in western N.C.", "=1 if in central N.C.",
   "=1 if in SMSA", "perc. minority, 1980", "weekly wage, construction",
   "wkly wge, trns, util, commun", "wkly wge, whlesle, retail trade",
@@ -391,8 +396,6 @@ We also know that `west` and `density` have a different relationship with `crmrt
 aggregate(density ~ region, data = crime, mean)
 ```
 
-
-Another important note about `density` is that it appears to be on a different scale than *people per square mile*. Internet research revealed that current average density in NC is 187.6 *people per square mile*, while in the provided dataset the average value is 1.43 (for 1987). Comparison of county-level density between provided dataset and current numbers provided stronger confirmation that *density* in 1987 *crime* dataset is *population per 100 sq.miles*. This clarification will be important for model coefficient interpretation
 **Note**: we tested *central* and *urban* in our models and they were not significant predictors for crime rate.
 
 ### Model #1
@@ -416,7 +419,7 @@ model1a <- lm(model1.formula, data = crime[crime$exclude == 0,])
 ```
 
 ```{r, echo = TRUE}
-interpret1 <- c("","For each person per 100 square miles increase in density,
+interpret1 <- c("","For an increase of 100 people per square mile in density,
                 crime rate increases by 13.7% when everything else stays the same",
                 "Crime rate in the West is 40.1% lower than in Central and Other
                 regions on average (and controlling for all other included variables)",
@@ -529,7 +532,7 @@ model2 <- lm(model2.formula, data = crime)
 interpret2 <- c(
   "",
   "(Before: 0.14): The effect of density has decreased as we are controlling for
-  more factors. For each person per 100 square miles increase in density,
+  more factors. For each 100 persons per square mile increase in density,
   crime rate increases by 8.9%",
   "(Before: -0.40): This coefficient cannot be interpreted by itself
   as it is now part of interaction with police per capita.
