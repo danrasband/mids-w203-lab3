@@ -120,7 +120,7 @@ Additionally, the table identifies some unusual features in some of the variable
 
 In the series of variables noting the weekly wages in a county, there is an exceptional value in one of the counties average wage, as seen in the below box-plot.
 
-```{r, fig.height = 2, fig.width = 5, fig.align="center"}
+```{r, fig.height = 2, fig.width = 4, fig.align="center"}
 par(mar=c(0,2,2,0))
 boxplot(crime$wser, cex.main = 0.6, cex.lab = 0.6, cex.axis = 0.6,
         main = "Weekly Wage for Service Industry",
@@ -704,7 +704,7 @@ plot(model2, which = 1, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 2:\nResiduals vs. Fitted", caption = "")
 ```
 
-For model 2, observation #51, again, seems to be pulling the errors away from 0 more than any other observation. This is the same observation where we replaced `prbarr` and `polpc` with sample means. Other observation #51 impacts, however are present. Below is the comparison of key variables means in the West region and observation #51 (which is in the West region):
+For model 2, observation #51, again, seems to be pulling the errors away from 0 more than any other observation. This is the same observation where we replaced `prbarr` and `polpc` with sample means. However, we still observe strong impact observation #51 on conditional mean of errors. Below is the comparison of key variables means in the West region and observation #51 (which is in the West region):
 
 ```{r}
 model2a.ind_vars <- c("density", "west", "prbarr", "prbconv",
@@ -734,9 +734,7 @@ plot(model2a, which = 1, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 2 excluding obs #51:\nResiduals vs. Fitted", caption = "")
 ```
 
-It appears that zero-conditional mean is closer to 0 on the lower end of the dependent variable. However, this assumption still seems to be violated.
-
-It is likely that omitted variables are contributing to the violation. These are discussed below. As there are more variables included in the model three, this has helped to account for the conditional errors.
+It appears that zero-conditional mean is closer to 0 on the lower end of the dependent variable. However, this assumption still seems to be violated. Including more variables as tested in model 3 did not improve this situation. Hence, it is likely that omitted variables are contributing to the violation. These are discussed below. 
 
 #### MLR.5: Homoskedasticity
 
@@ -797,11 +795,9 @@ Our estimates change by 1-8% on average and all t-stats remain above 2 (except t
 
 #### MLR.6: Normality of Errors
 
-From the first plot (residuals vs. fitted values), it is evident that there are some instances with very low and very high crime rates that make residuals deviate from 0. Interestingly enough, observation #51 still appears as an outlier (that's where we recoded $polpc$ and $prbarr$).
-
 Our dataset contains more than 30 observations (90 to be precise), so we can apply CLT to its residuals and assume they are normal. We still investigate the histograms for models 1 and 2 below. Neither of them fit into the normal distribution particularly well, but they don't have particularly strong skews either.
 
-```{r, fig.height = 3, fig.width = 5, fig.align="center"}
+```{r, fig.height = 2, fig.width = 5, fig.align="center"}
 par(mfrow=c(1,2), mar=c(2,4,2,0))
 hist(model1$residuals,
      breaks = 15,  col = "darkblue", xlim = c(-1,1),
