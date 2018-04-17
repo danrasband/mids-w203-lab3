@@ -348,7 +348,7 @@ This transformation would also allow us to interpret the coefficients of predict
 
 Let's take a look at histograms for `crmrte` (as it is and transformed):
 
-```{r, fig.height = 3, fig.width = 7, fig.align="center"}
+```{r, fig.height = 2, fig.width = 7, fig.align="center"}
 par(mfrow=c(1,2), mar=c(2,4,1,0))
 hist(crime$crmrte,
      breaks = 15, xlim = c(0,0.1), ylim = c(0,17), col = "darkblue",
@@ -734,7 +734,8 @@ plot(model2a, which = 1, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
      main = "Model 2 excluding obs #51:\nResiduals vs. Fitted", caption = "")
 ```
 
-It appears that zero-conditional mean is closer to 0 on the lower end of the dependent variable. However, this assumption still seems to be violated. Including more variables as tested in model 3 did not improve this situation. Hence, it is likely that omitted variables are contributing to the violation. These are discussed below. 
+It appears that zero-conditional mean is closer to 0 on the lower end of the dependent variable. However, this assumption still seems to be violated. Including more variables as tested in model 3 did not improve the situation. One of the potential reasons is that we are missing variables that would help explain extreme crime rates (very low and very high). Additionally, this violation is not driven by log transformation of our dependent variable because the models with untransformed crime rates performed significantly worse in terms of assumptions 4 and 5.
+Hence, our hypothesis is that omitted variables are main contributors to the violation. The details are discussed in the corresponding secion. 
 
 #### MLR.5: Homoskedasticity
 
