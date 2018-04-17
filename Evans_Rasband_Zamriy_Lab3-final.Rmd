@@ -735,7 +735,8 @@ plot(model2a, which = 1, cex.main = 0.8, cex.axis = 0.6, cex.lab = 0.6,
 ```
 
 It appears that zero-conditional mean is closer to 0 on the lower end of the dependent variable. However, this assumption still seems to be violated. Including more variables as tested in model 3 did not improve the situation. One of the potential reasons is that we are missing variables that would help explain extreme crime rates (very low and very high). Additionally, this violation is not driven by log transformation of our dependent variable because the models with untransformed crime rates performed significantly worse in terms of assumptions 4 and 5.
-Hence, our hypothesis is that omitted variables are main contributors to the violation. The details are discussed in the corresponding secion. 
+
+Hence, our hypothesis is that omitted variables are main contributors to the violation. The details are discussed in the corresponding section. 
 
 #### MLR.5: Homoskedasticity
 
